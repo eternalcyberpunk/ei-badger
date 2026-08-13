@@ -10,9 +10,9 @@
 
 <!-- ==========================================================================
      CARD STYLESHEET  (id="cardCss")
-     Kept isolated from the application chrome because the PNG/SVG exporter
-     serialises this exact stylesheet into the exported <foreignObject>.
-     Anything the physical card needs must live in here.
+     Isolated from the application chrome: the PNG / SVG / VIDEO exporters
+     serialise this exact stylesheet into an SVG <foreignObject>, so anything
+     the physical card needs must live in here and nowhere else.
      ========================================================================== -->
 <style id="cardCss">
 :root{
@@ -25,9 +25,9 @@
 }
 
 /* --- CARD SHELL --------------------------------------------------------
-   Card is authored at 384 x 240 CSS px = exactly 4.00in x 2.50in at 96dpi.
-   Screen preview scales it up with a transform on the parent stage, so the
-   printed geometry is always true to size.                                */
+   Authored at 384 x 240 CSS px = exactly 4.00in x 2.50in at 96dpi.
+   Screen preview and print sheets scale it with a transform, so printed
+   geometry is always predictable.                                        */
 .card{
   position:relative; width:384px; height:240px; flex:none;
   background:var(--ink); color:var(--bone);
@@ -39,7 +39,6 @@
 .card *{box-sizing:border-box;}
 .card-front{display:flex; flex-direction:column;}
 
-/* substrate: graphite gradients + accent bloom + engineering grid */
 .c-bg{position:absolute; inset:0; z-index:0;
   background:
     radial-gradient(120% 90% at 12% 0%, color-mix(in srgb,var(--accent) 26%,transparent) 0%, transparent 52%),
@@ -54,23 +53,19 @@
   -webkit-mask-image:radial-gradient(120% 100% at 30% 0%, #000 20%, transparent 80%);
   mask-image:radial-gradient(120% 100% at 30% 0%, #000 20%, transparent 80%);
 }
-/* holographic foil sweep */
-.c-holo{position:absolute; inset:-40%; z-index:2; opacity:.30; mix-blend-mode:screen; pointer-events:none;
+.c-holo{position:absolute; inset:-40%; z-index:2; opacity:.28; mix-blend-mode:screen; pointer-events:none;
   background:linear-gradient(72deg,transparent 30%,rgba(34,211,238,.5) 42%,rgba(168,85,247,.55) 50%,rgba(255,45,143,.45) 58%,transparent 70%);
   animation:holoSweep 9s linear infinite;}
 @keyframes holoSweep{0%{transform:translateX(-32%) rotate(0.001deg)}100%{transform:translateX(32%) rotate(0.001deg)}}
-/* CRT scanlines + travelling beam + film grain */
-.c-lines{position:absolute; inset:0; z-index:6; pointer-events:none; opacity:.34;
+.c-lines{position:absolute; inset:0; z-index:6; pointer-events:none; opacity:.30;
   background:repeating-linear-gradient(to bottom, rgba(0,0,0,.55) 0 1px, transparent 1px 3px);}
-.c-beam{position:absolute; left:0; right:0; height:26px; z-index:7; pointer-events:none; opacity:.5;
+.c-beam{position:absolute; left:0; right:0; height:26px; z-index:7; pointer-events:none; opacity:.45;
   background:linear-gradient(to bottom,transparent,color-mix(in srgb,var(--accent2) 55%,transparent),transparent);
   animation:beam 5.5s linear infinite;}
 @keyframes beam{0%{top:-30px}100%{top:250px}}
-.c-grain{position:absolute; inset:0; z-index:8; pointer-events:none; opacity:.16; mix-blend-mode:overlay;
-  background-image:var(--noise); background-size:120px 120px;}
-/* bevelled hairline edge + corner ticks */
-.c-edge{position:absolute; inset:0; z-index:9; pointer-events:none;
-  clip-path:inherit;
+.c-grain{position:absolute; inset:0; z-index:8; pointer-events:none; opacity:.14; mix-blend-mode:overlay;
+  background-image:radial-gradient(rgba(255,255,255,.5) .5px, transparent .5px); background-size:3px 3px;}
+.c-edge{position:absolute; inset:0; z-index:9; pointer-events:none; clip-path:inherit;
   box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 55%,transparent), inset 0 0 0 2.5px rgba(0,0,0,.65), inset 0 0 22px rgba(0,0,0,.85);}
 .c-edge::before,.c-edge::after{content:""; position:absolute; width:16px; height:16px;}
 .c-edge::before{left:4px; bottom:4px; border-left:1px solid var(--accent2); border-bottom:1px solid var(--accent2); opacity:.8;}
@@ -83,12 +78,12 @@
 .c-sigil{width:19px; height:19px; flex:none;}
 .c-org{font-size:10px; font-weight:700; letter-spacing:.16em; line-height:1;
   text-shadow:0 0 6px color-mix(in srgb,var(--accent) 70%,transparent), -0.5px 0 0 rgba(255,45,143,.55), 0.5px 0 0 rgba(34,211,238,.45);}
-.c-sys{font-family:var(--mono); font-size:4.4px; letter-spacing:.30em; color:var(--ash); margin-top:2px; line-height:1;}
+.c-sys{font-family:var(--mono); font-size:4.6px; letter-spacing:.28em; color:var(--ash); margin-top:2px; line-height:1;}
 .c-headtxt{flex:1; min-width:0;}
 .c-clr{display:flex; flex-direction:column; align-items:flex-end; justify-content:center; height:20px;
   padding:2px 6px; background:rgba(0,0,0,.55); border:1px solid color-mix(in srgb,var(--accent) 70%,transparent);
   clip-path:polygon(6px 0,100% 0,100% 100%,0 100%,0 6px);}
-.c-clr-l{font-family:var(--mono); font-size:3.6px; letter-spacing:.28em; color:var(--ash); line-height:1;}
+.c-clr-l{font-family:var(--mono); font-size:3.8px; letter-spacing:.26em; color:var(--ash); line-height:1;}
 .c-clr-v{font-size:9px; font-weight:700; letter-spacing:.08em; line-height:1.05; color:var(--bone);}
 .c-clr-v b{color:var(--accent); font-weight:700;}
 
@@ -96,69 +91,65 @@
 .c-body{position:relative; z-index:5; flex:1; display:grid; grid-template-columns:112px 1fr; gap:8px; padding:6px 8px 0 7px; min-height:0;}
 .c-left{display:flex; flex-direction:column; gap:4px; min-width:0;}
 
-/* portrait: facial-recognition framing */
 .c-por{position:relative; height:114px; background:#07080c; overflow:hidden;
   border:1px solid rgba(255,255,255,.10);
   clip-path:polygon(0 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%);}
 .c-por img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block;
   filter:contrast(1.08) saturate(.72) brightness(.95);}
 .c-por-empty{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center;
-  font-family:var(--mono); font-size:5px; letter-spacing:.22em; color:var(--dim); padding:0 6px;
+  font-family:var(--mono); font-size:5px; letter-spacing:.20em; color:var(--dim); padding:0 6px;
   background:repeating-linear-gradient(135deg,#0d0f15 0 6px,#0a0b10 6px 12px);}
 .c-por-tint{position:absolute; inset:0; background:linear-gradient(180deg,transparent 40%,rgba(5,6,10,.88) 100%), linear-gradient(0deg,color-mix(in srgb,var(--accent) 16%,transparent),transparent 60%);}
-.c-por-grid{position:absolute; inset:0; opacity:.32;
+.c-por-grid{position:absolute; inset:0; opacity:.30;
   background-image:linear-gradient(to right,color-mix(in srgb,var(--accent2) 45%,transparent) 1px,transparent 1px),
                    linear-gradient(to bottom,color-mix(in srgb,var(--accent2) 45%,transparent) 1px,transparent 1px);
   background-size:14px 14px;}
-.c-por-beam{position:absolute; left:0; right:0; height:14px; opacity:.65;
+.c-por-beam{position:absolute; left:0; right:0; height:14px; opacity:.6;
   background:linear-gradient(to bottom,transparent,color-mix(in srgb,var(--accent2) 75%,transparent),transparent);
   animation:beamP 3.4s ease-in-out infinite alternate;}
 @keyframes beamP{0%{top:-6px}100%{top:104px}}
 .c-por svg.c-brk{position:absolute; inset:0; width:100%; height:100%;}
 .c-por-tag{position:absolute; left:0; bottom:0; right:9px; display:flex; justify-content:space-between; align-items:center;
   padding:1.5px 3px; background:color-mix(in srgb,var(--accent) 72%,#000);
-  font-family:var(--mono); font-size:3.9px; letter-spacing:.16em; color:#fff;}
+  font-family:var(--mono); font-size:4.2px; letter-spacing:.14em; color:#fff;}
 .c-por-tag i{width:3px; height:3px; background:#7CFFB2; border-radius:50%; box-shadow:0 0 4px #7CFFB2; animation:blip 1.6s steps(1) infinite;}
 @keyframes blip{0%,60%{opacity:1}61%,100%{opacity:.25}}
-.c-por-id{position:absolute; top:3px; left:3px; font-family:var(--mono); font-size:3.6px; letter-spacing:.1em;
+.c-por-id{position:absolute; top:3px; left:3px; font-family:var(--mono); font-size:3.9px; letter-spacing:.08em;
   color:var(--bone); background:rgba(0,0,0,.6); padding:0 2px; opacity:.9;}
 
-/* biometric mini-panel under the portrait */
 .c-bio{flex:1; display:flex; flex-direction:column; justify-content:space-between; gap:2px;
   padding:3px; background:rgba(0,0,0,.42); border:1px solid rgba(255,255,255,.07);}
-.c-bio-row{display:flex; align-items:center; gap:3px; font-family:var(--mono); font-size:3.6px; letter-spacing:.12em; color:var(--ash);}
+.c-bio-row{display:flex; align-items:center; gap:3px; font-family:var(--mono); font-size:3.9px; letter-spacing:.10em; color:var(--ash);}
 .c-bio-row span{width:26px; flex:none;}
 .c-meter{flex:1; height:2.5px; background:rgba(255,255,255,.10); position:relative; overflow:hidden;}
 .c-meter b{position:absolute; inset:0 auto 0 0; display:block; background:linear-gradient(90deg,var(--accent),var(--accent2)); box-shadow:0 0 5px color-mix(in srgb,var(--accent2) 70%,transparent);}
 .c-bio-row em{font-style:normal; color:var(--bone); width:15px; text-align:right;}
 .c-helix{height:11px; width:100%;}
 
-/* right column */
 .c-right{position:relative; display:flex; flex-direction:column; min-width:0;}
 .c-name{font-size:17px; font-weight:700; line-height:1; letter-spacing:.005em; color:#fff;
   text-shadow:0 0 10px color-mix(in srgb,var(--accent) 55%,transparent); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 .c-name.long{font-size:13px;}
 .c-name.xlong{font-size:11px;}
 .c-call{display:flex; align-items:center; gap:4px; margin-top:1px; font-family:var(--mono); font-size:6.5px;
-  letter-spacing:.24em; color:var(--accent2); white-space:nowrap; overflow:hidden;}
-.c-call::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,color-mix(in srgb,var(--accent2) 60%,transparent),transparent);}
+  letter-spacing:.22em; color:var(--accent2); white-space:nowrap; overflow:hidden;}
+.c-call::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,color-mix(in srgb,var(--accent2) 55%,transparent),transparent);}
 
 .c-fields{margin-top:4px; display:flex; flex-direction:column; gap:1.5px;}
-.c-fl{display:flex; align-items:baseline; gap:3px; font-family:var(--mono); font-size:5px; line-height:1.35; letter-spacing:.11em;}
-.c-fl u{text-decoration:none; color:var(--dim); width:46px; flex:none;}
+.c-fl{display:flex; align-items:baseline; gap:3px; font-family:var(--mono); font-size:5.4px; line-height:1.32; letter-spacing:.09em;}
+.c-fl u{text-decoration:none; color:var(--ash); width:48px; flex:none;}
 .c-fl s{text-decoration:none; color:color-mix(in srgb,var(--accent) 85%,#fff); flex:none;}
 .c-fl q{quotes:none; color:var(--bone); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 
-/* serial block: the loudest typographic moment on the card */
 .c-serial{margin-top:auto; position:relative; padding:3px 5px 3px 6px; background:linear-gradient(90deg,rgba(0,0,0,.72),rgba(0,0,0,.15));
   border-left:2px solid var(--accent);}
-.c-serial-l{font-family:var(--mono); font-size:3.8px; letter-spacing:.30em; color:var(--ash);}
+.c-serial-l{font-family:var(--mono); font-size:4px; letter-spacing:.28em; color:var(--ash);}
 .c-serial-v{font-size:25px; font-weight:700; line-height:.98; letter-spacing:.02em; color:#fff;
   text-shadow:0 0 12px color-mix(in srgb,var(--accent) 85%,transparent), -0.7px 0 0 rgba(255,45,143,.6), 0.7px 0 0 rgba(34,211,238,.5);}
-.c-serial-m{font-family:var(--mono); font-size:4.6px; letter-spacing:.20em; color:var(--accent2); margin-top:1px;}
+.c-serial-m{font-family:var(--mono); font-size:4.8px; letter-spacing:.18em; color:var(--accent2); margin-top:1px;}
 .c-radar{position:absolute; right:2px; bottom:1px; width:42px; height:42px; opacity:.9;}
-.c-hexcol{position:absolute; right:0; top:0; font-family:var(--mono); font-size:3.4px; line-height:1.5; letter-spacing:.06em;
-  color:var(--dim); text-align:right; opacity:.75;}
+.c-hexcol{position:absolute; right:0; top:0; font-family:var(--mono); font-size:3.6px; line-height:1.5; letter-spacing:.04em;
+  color:var(--dim); text-align:right; opacity:.7;}
 
 /* --- FOOTER ------------------------------------------------------------ */
 .c-foot{position:relative; z-index:5; flex:none; height:52px; display:grid; grid-template-columns:1fr 44px; gap:6px;
@@ -166,7 +157,7 @@
   background:linear-gradient(0deg,rgba(0,0,0,.6),transparent);}
 .c-footL{display:flex; flex-direction:column; justify-content:space-between; min-width:0;}
 .c-stat{display:flex; gap:6px; flex-wrap:nowrap;}
-.c-st{display:flex; align-items:center; gap:2.5px; font-family:var(--mono); font-size:4px; letter-spacing:.13em; color:var(--ash); white-space:nowrap;}
+.c-st{display:flex; align-items:center; gap:2.5px; font-family:var(--mono); font-size:4.2px; letter-spacing:.11em; color:var(--ash); white-space:nowrap;}
 .c-st i{width:3px; height:3px; background:var(--accent2); border-radius:50%; box-shadow:0 0 4px var(--accent2); animation:blip 2.2s steps(1) infinite;}
 .c-st.ok i{background:#7CFFB2; box-shadow:0 0 4px #7CFFB2; animation-delay:.4s;}
 .c-st.hot i{background:var(--magenta); box-shadow:0 0 4px var(--magenta); animation-delay:.9s;}
@@ -174,13 +165,12 @@
 .c-bars{height:17px; display:flex; align-items:stretch; gap:0; overflow:hidden;}
 .c-bars i{display:block; height:100%; background:var(--bone);}
 .c-bars i.sp{background:transparent;}
-.c-micro{display:flex; justify-content:space-between; gap:4px; font-family:var(--mono); font-size:3.6px; letter-spacing:.14em; color:var(--dim); white-space:nowrap; overflow:hidden;}
+.c-micro{display:flex; justify-content:space-between; gap:4px; font-family:var(--mono); font-size:3.9px; letter-spacing:.12em; color:var(--dim); white-space:nowrap; overflow:hidden;}
 .c-qr{width:44px; height:44px; align-self:end; padding:2px; background:#e8ecf4;
   border:1px solid color-mix(in srgb,var(--accent) 60%,transparent);
   clip-path:polygon(0 0,100% 0,100% 100%,5px 100%,0 calc(100% - 5px));}
 .c-qr svg{display:block; width:100%; height:100%;}
 
-/* class-specific decorative stripe (top-right hazard flash) */
 .c-flash{position:absolute; z-index:4; top:28px; right:0; width:54px; height:5px; opacity:.85;
   background:repeating-linear-gradient(115deg,var(--accent) 0 4px,transparent 4px 8px);}
 .card[data-cls="security"] .c-flash{background:repeating-linear-gradient(115deg,var(--magenta) 0 5px,#000 5px 10px); height:6px;}
@@ -193,24 +183,24 @@
 .b-head{position:relative; z-index:5; height:19px; flex:none; display:flex; align-items:center; gap:5px; padding:0 8px 0 7px;
   border-bottom:1px solid rgba(255,255,255,.10); background:linear-gradient(90deg,rgba(0,0,0,.55),transparent);}
 .b-head .c-sigil{width:12px; height:12px;}
-.b-title{font-size:7px; font-weight:700; letter-spacing:.20em;}
-.b-id{margin-left:auto; font-family:var(--mono); font-size:5px; letter-spacing:.16em; color:var(--accent2);}
-.b-stripe{position:relative; z-index:5; flex:none; height:22px; margin:5px 0; background:linear-gradient(180deg,#05060a,#0f1118 40%,#05060a);
+.b-title{font-size:7px; font-weight:700; letter-spacing:.18em;}
+.b-id{margin-left:auto; font-family:var(--mono); font-size:5.2px; letter-spacing:.14em; color:var(--accent2);}
+.b-stripe{position:relative; z-index:5; flex:none; height:20px; margin:4px 0; background:linear-gradient(180deg,#05060a,#0f1118 40%,#05060a);
   border-top:1px solid rgba(255,255,255,.08); border-bottom:1px solid rgba(255,255,255,.08);
   display:flex; align-items:center; overflow:hidden; padding:0 7px;}
-.b-stripe span{font-family:var(--mono); font-size:4.2px; letter-spacing:.30em; color:color-mix(in srgb,var(--accent) 70%,var(--dim)); white-space:nowrap; opacity:.85;}
+.b-stripe span{font-family:var(--mono); font-size:4.4px; letter-spacing:.26em; color:color-mix(in srgb,var(--accent) 70%,var(--dim)); white-space:nowrap; opacity:.85;}
 .b-body{position:relative; z-index:5; flex:1; display:grid; grid-template-columns:1fr 88px; gap:7px; padding:0 8px 0 7px; min-height:0;}
 .b-sec{margin-bottom:4px;}
-.b-lab{display:flex; align-items:center; gap:3px; font-family:var(--mono); font-size:4px; letter-spacing:.28em; color:var(--accent2); margin-bottom:1.5px;}
-.b-lab::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,rgba(255,255,255,.18),transparent);}
-.b-txt{font-family:var(--mono); font-size:4.6px; line-height:1.55; color:var(--bone); opacity:.88;}
+.b-lab{display:flex; align-items:center; gap:3px; font-family:var(--mono); font-size:4.2px; letter-spacing:.26em; color:var(--accent2); margin-bottom:1.5px;}
+.b-lab::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,rgba(255,255,255,.14),transparent); opacity:.7;}
+.b-txt{font-family:var(--mono); font-size:5.2px; line-height:1.5; color:var(--bone); opacity:.9;}
 .b-chips{display:flex; flex-wrap:wrap; gap:2px;}
-.b-chip{font-family:var(--mono); font-size:3.9px; letter-spacing:.10em; padding:1px 3px; color:var(--bone);
+.b-chip{font-family:var(--mono); font-size:4.2px; letter-spacing:.08em; padding:1px 3px; color:var(--bone);
   background:rgba(255,255,255,.05); border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);}
-.b-quote{font-family:var(--disp); font-size:6.4px; font-style:italic; line-height:1.35; color:#fff; opacity:.92;
+.b-quote{font-family:var(--disp); font-size:6.6px; font-style:italic; line-height:1.32; color:#fff; opacity:.92;
   border-left:2px solid var(--accent); padding-left:4px;}
-.b-kv{display:flex; gap:3px; font-family:var(--mono); font-size:4.3px; line-height:1.5; letter-spacing:.08em;}
-.b-kv u{text-decoration:none; color:var(--dim); width:34px; flex:none;}
+.b-kv{display:flex; gap:3px; font-family:var(--mono); font-size:4.8px; line-height:1.45; letter-spacing:.06em;}
+.b-kv u{text-decoration:none; color:var(--ash); width:34px; flex:none;}
 .b-kv q{quotes:none; color:var(--bone); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .b-right{display:flex; flex-direction:column; align-items:stretch; gap:4px;}
 .b-qr{width:78px; height:78px; align-self:center; padding:3px; background:#e8ecf4;
@@ -219,47 +209,42 @@
 .b-watermark{position:absolute; z-index:3; right:-14px; bottom:16px; width:120px; height:120px; opacity:.10; pointer-events:none;}
 .b-foot{position:relative; z-index:5; flex:none; padding:3px 8px 5px 7px; border-top:1px solid rgba(255,255,255,.09);
   background:linear-gradient(0deg,rgba(0,0,0,.6),transparent);}
-.b-warn{font-family:var(--mono); font-size:3.8px; letter-spacing:.10em; line-height:1.45; color:var(--dim);}
-.b-warn b{color:color-mix(in srgb,var(--magenta) 80%,#fff); font-weight:400; letter-spacing:.18em;}
+.b-warn{font-family:var(--mono); font-size:4px; letter-spacing:.06em; line-height:1.4; color:var(--dim);}
+.b-warn b{color:color-mix(in srgb,var(--magenta) 80%,#fff); font-weight:400; letter-spacing:.14em;}
 
-/* --- PRINT-SAFE: kill every animation, keep every colour --------------- */
+/* --- PRINT SAFE: kills motion, keeps every colour ---------------------- */
 .card.print-safe .c-holo,.card.print-safe .c-beam,.card.print-safe .c-por-beam{animation:none !important;}
-.card.print-safe .c-por-beam{opacity:0;}
-.card.print-safe .c-beam{opacity:0;}
+.card.print-safe .c-por-beam,.card.print-safe .c-beam{opacity:0;}
 .card.print-safe .c-st i,.card.print-safe .c-por-tag i{animation:none !important; opacity:1 !important;}
-.card.print-safe .c-lines{opacity:.20;}
+.card.print-safe .c-lines{opacity:.18;}
 @media (prefers-reduced-motion:reduce){
   .c-holo,.c-beam,.c-por-beam,.c-st i,.c-por-tag i{animation:none !important;}
 }
 </style>
 
 <!-- ==========================================================================
-     APPLICATION CHROME STYLESHEET
+     APPLICATION CHROME
      ========================================================================== -->
 <style id="appCss">
 *{box-sizing:border-box;}
 html,body{margin:0; padding:0;}
-body{
-  background:var(--void); color:var(--bone); font-family:var(--disp);
-  min-height:100vh; overflow-x:hidden;
-  background-image:radial-gradient(90% 60% at 50% -10%, rgba(124,58,237,.20), transparent 60%);
-}
-#rain{position:fixed; inset:0; z-index:0; opacity:.32; pointer-events:none;}
+body{background:var(--void); color:var(--bone); font-family:var(--disp); min-height:100vh; overflow-x:hidden;
+  background-image:radial-gradient(90% 60% at 50% -10%, rgba(124,58,237,.20), transparent 60%);}
+#rain{position:fixed; inset:0; z-index:0; opacity:.30; pointer-events:none;}
 .veil{position:fixed; inset:0; z-index:1; pointer-events:none;
   background:repeating-linear-gradient(to bottom, rgba(0,0,0,.30) 0 1px, transparent 1px 3px); opacity:.5;}
 .shell{position:relative; z-index:2;}
 
-/* top navigation */
 .nav{position:sticky; top:0; z-index:30; display:flex; align-items:center; gap:12px; padding:9px 16px;
   background:rgba(6,7,11,.92); backdrop-filter:blur(8px);
   border-bottom:1px solid rgba(168,85,247,.35); box-shadow:0 12px 40px -22px rgba(168,85,247,.9);}
 .nav-sigil{width:30px; height:30px; flex:none;}
 .nav-t{font-size:14px; font-weight:700; letter-spacing:.18em; line-height:1;}
 .nav-t em{font-style:normal; color:var(--violet);}
-.nav-s{font-family:var(--mono); font-size:8px; letter-spacing:.32em; color:var(--dim); margin-top:3px;}
+.nav-s{font-family:var(--mono); font-size:8px; letter-spacing:.30em; color:var(--dim); margin-top:3px;}
 .nav-sp{flex:1;}
 .leds{display:flex; gap:12px;}
-.led{display:flex; align-items:center; gap:5px; font-family:var(--mono); font-size:9px; letter-spacing:.16em; color:var(--ash);}
+.led{display:flex; align-items:center; gap:5px; font-family:var(--mono); font-size:9px; letter-spacing:.14em; color:var(--ash);}
 .led i{width:6px; height:6px; border-radius:50%; background:#7CFFB2; box-shadow:0 0 8px #7CFFB2; animation:pulseLed 2.4s steps(1) infinite;}
 .led.v i{background:var(--violet); box-shadow:0 0 8px var(--violet); animation-delay:.5s;}
 .led.c i{background:var(--cyan); box-shadow:0 0 8px var(--cyan); animation-delay:1s;}
@@ -267,7 +252,6 @@ body{
 @keyframes pulseLed{0%,70%{opacity:1}71%,100%{opacity:.3}}
 .clock{font-family:var(--mono); font-size:9px; letter-spacing:.12em; color:var(--cyan);}
 
-/* two-pane layout */
 .main{display:grid; grid-template-columns:390px 1fr; gap:16px; padding:16px; align-items:start; max-width:1580px; margin:0 auto;}
 .panel{background:linear-gradient(180deg,rgba(20,22,29,.94),rgba(8,9,13,.94));
   border:1px solid rgba(255,255,255,.09); position:relative;
@@ -275,20 +259,19 @@ body{
 .panel-h{display:flex; align-items:center; gap:8px; padding:9px 12px; border-bottom:1px solid rgba(168,85,247,.28);
   background:linear-gradient(90deg,rgba(168,85,247,.20),transparent);}
 .panel-h h2{margin:0; font-size:11px; font-weight:700; letter-spacing:.22em;}
-.panel-h .tag{margin-left:auto; font-family:var(--mono); font-size:8px; letter-spacing:.18em; color:var(--dim);}
+.panel-h .tag{margin-left:auto; font-family:var(--mono); font-size:8px; letter-spacing:.16em; color:var(--dim);}
 .editor{max-height:calc(100vh - 116px); overflow-y:auto; padding:12px;}
 .editor::-webkit-scrollbar{width:9px;}
 .editor::-webkit-scrollbar-track{background:#0b0c10;}
 .editor::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--violet),var(--cyan));}
 
-/* form primitives */
 .grp{margin-bottom:16px;}
-.grp-h{display:flex; align-items:center; gap:6px; margin-bottom:8px; font-family:var(--mono); font-size:8.5px; letter-spacing:.3em; color:var(--cyan);}
+.grp-h{display:flex; align-items:center; gap:6px; margin-bottom:8px; font-family:var(--mono); font-size:8.5px; letter-spacing:.28em; color:var(--cyan);}
 .grp-h::before{content:""; width:5px; height:5px; background:var(--cyan); transform:rotate(45deg);}
 .grp-h::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,rgba(34,211,238,.4),transparent);}
 .row{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
 .f{display:block; margin-bottom:8px;}
-.f>span{display:block; font-family:var(--mono); font-size:8px; letter-spacing:.2em; color:var(--ash); margin-bottom:3px;}
+.f>span{display:block; font-family:var(--mono); font-size:8px; letter-spacing:.18em; color:var(--ash); margin-bottom:3px;}
 .f input[type=text],.f input[type=email],.f input[type=date],.f select,.f textarea{
   width:100%; background:#07080c; color:var(--bone); border:1px solid rgba(255,255,255,.13);
   padding:7px 8px; font-family:var(--mono); font-size:11px; letter-spacing:.04em; outline:none;
@@ -297,16 +280,17 @@ body{
 .f input:focus,.f select:focus,.f textarea:focus{border-color:var(--violet); box-shadow:0 0 0 1px rgba(168,85,247,.45), 0 0 18px -4px rgba(168,85,247,.8);}
 .f input[type=range]{width:100%; accent-color:var(--violet); background:transparent;}
 .f select option{background:#07080c;}
-.hint{font-family:var(--mono); font-size:7.5px; letter-spacing:.1em; color:var(--dim); margin-top:3px;}
+.hint{font-family:var(--mono); font-size:7.5px; line-height:1.6; letter-spacing:.08em; color:var(--dim); margin-top:3px;}
+.hint b{color:var(--cyan); font-weight:400;}
 
-/* buttons */
 .btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;
-  padding:8px 12px; font-family:var(--disp); font-size:10px; font-weight:600; letter-spacing:.18em;
+  padding:8px 12px; font-family:var(--disp); font-size:10px; font-weight:600; letter-spacing:.16em;
   color:var(--bone); background:linear-gradient(180deg,#191c25,#0c0e14); border:1px solid rgba(255,255,255,.16);
   clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
   transition:.15s; text-transform:uppercase; width:100%;}
 .btn:hover{border-color:var(--violet); color:#fff; box-shadow:0 0 20px -6px rgba(168,85,247,.95); transform:translateY(-1px);}
 .btn:active{transform:translateY(0);}
+.btn:disabled{opacity:.45; cursor:progress; transform:none; box-shadow:none;}
 .btn:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
 .btn.pri{background:linear-gradient(180deg,var(--violet-dp),#4c1d95); border-color:var(--violet);}
 .btn.pri:hover{background:linear-gradient(180deg,var(--violet),#5b21b6);}
@@ -317,16 +301,18 @@ body{
 .btns.c2{grid-template-columns:1fr 1fr;}
 .btns.c3{grid-template-columns:1fr 1fr 1fr;}
 
-/* toggles */
 .tog{display:flex; align-items:center; gap:8px; cursor:pointer; padding:6px 8px; margin-bottom:6px;
-  background:#07080c; border:1px solid rgba(255,255,255,.10); font-family:var(--mono); font-size:9px; letter-spacing:.14em; color:var(--ash);}
+  background:#07080c; border:1px solid rgba(255,255,255,.10); font-family:var(--mono); font-size:9px; letter-spacing:.12em; color:var(--ash);}
 .tog input{appearance:none; width:26px; height:13px; background:#22252f; position:relative; cursor:pointer; flex:none; transition:.15s;}
 .tog input::after{content:""; position:absolute; top:2px; left:2px; width:9px; height:9px; background:var(--dim); transition:.15s;}
 .tog input:checked{background:rgba(168,85,247,.35);}
 .tog input:checked::after{left:15px; background:var(--violet); box-shadow:0 0 8px var(--violet);}
 .tog:hover{border-color:rgba(168,85,247,.5); color:var(--bone);}
 
-/* preview side */
+.readout{display:flex; justify-content:space-between; gap:8px; padding:7px 9px; margin-bottom:6px;
+  background:#07080c; border:1px solid rgba(34,211,238,.28); font-family:var(--mono); font-size:9px; letter-spacing:.10em; color:var(--ash);}
+.readout b{color:var(--cyan); font-weight:400;}
+
 .preview{position:sticky; top:64px;}
 .pv-body{padding:18px; display:flex; flex-direction:column; align-items:center; gap:14px;
   background-image:radial-gradient(circle at 1px 1px, rgba(255,255,255,.07) 1px, transparent 0); background-size:18px 18px;
@@ -334,16 +320,15 @@ body{
 .stagewrap{position:relative;}
 .stage{transform-origin:top left; transform:scale(var(--zoom,2));}
 .stage-slot{position:relative; filter:drop-shadow(0 24px 40px rgba(0,0,0,.75)) drop-shadow(0 0 30px rgba(168,85,247,.20));}
-.face-lab{font-family:var(--mono); font-size:8px; letter-spacing:.3em; color:var(--dim); margin-bottom:6px;}
+.face-lab{font-family:var(--mono); font-size:8px; letter-spacing:.28em; color:var(--dim); margin-bottom:6px;}
 .toolbar{display:flex; flex-wrap:wrap; gap:6px; padding:10px 12px; border-top:1px solid rgba(255,255,255,.09); background:rgba(6,7,11,.7);}
-.toolbar .btn{width:auto; flex:1 1 120px;}
+.toolbar .btn{width:auto; flex:1 1 118px;}
 .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); z-index:80;
   padding:10px 18px; background:rgba(8,9,13,.96); border:1px solid var(--violet); color:var(--bone);
-  font-family:var(--mono); font-size:10px; letter-spacing:.18em; opacity:0; pointer-events:none; transition:.25s;
+  font-family:var(--mono); font-size:10px; letter-spacing:.16em; opacity:0; pointer-events:none; transition:.25s;
   box-shadow:0 0 30px -6px rgba(168,85,247,.9);}
 .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
 
-/* card entry animation on GENERATE */
 @keyframes cardIn{
   0%{opacity:0; transform:translateX(-4px) skewX(6deg); filter:brightness(2.4) saturate(0);}
   22%{opacity:1; transform:translateX(5px) skewX(-4deg);}
@@ -352,37 +337,46 @@ body{
 }
 .card.gen{animation:cardIn .5s ease-out;}
 
-/* page footer */
 .foot{position:relative; z-index:2; padding:22px 16px 34px; text-align:center; border-top:1px solid rgba(255,255,255,.07); margin-top:6px;}
-.foot-1{font-size:10px; font-weight:600; letter-spacing:.30em; color:var(--ash);}
+.foot-1{font-size:10px; font-weight:600; letter-spacing:.28em; color:var(--ash);}
 .foot-1 em{font-style:normal; color:var(--violet);}
-.foot-2{font-family:var(--mono); font-size:9px; letter-spacing:.26em; color:var(--dim); margin-top:6px;}
+.foot-2{font-family:var(--mono); font-size:9px; letter-spacing:.24em; color:var(--dim); margin-top:6px;}
 
-/* PRINT STAGE — hidden on screen, the only thing visible on paper */
+/* ==========================================================================
+   PRINT STAGE
+   Each .psheet is a fixed box smaller than the printable area of a letter
+   page, so a sheet can never spill onto a second page — that overflow was
+   what turned a 4-up sheet into "3 cards and a sliver". Cards are scaled by
+   a factor computed in JS from the chosen grid.
+   ========================================================================== */
 #printStage{display:none;}
-.sheet{display:flex; flex-direction:column; align-items:center; gap:10px;}
+.psheet{position:relative; width:7.4in; height:9.7in; margin:0 auto;
+  display:flex; align-items:center; justify-content:center; overflow:hidden;}
+.pgrid{display:grid; justify-items:center; align-items:center;}
 .slot{position:relative;}
-.slot.cut{outline:1px dashed rgba(120,120,130,.85); outline-offset:5px;}
-.slot .crop{position:absolute; width:9px; height:9px; border:0 solid #555;}
-.slot .crop.tl{top:-9px; left:-9px; border-left-width:1px; border-top-width:1px;}
-.slot .crop.tr{top:-9px; right:-9px; border-right-width:1px; border-top-width:1px;}
-.slot .crop.bl{bottom:-9px; left:-9px; border-left-width:1px; border-bottom-width:1px;}
-.slot .crop.br{bottom:-9px; right:-9px; border-right-width:1px; border-bottom-width:1px;}
+.slot>.card{transform-origin:top left;}
+.slot.cut{outline:1px dashed rgba(110,110,120,.85); outline-offset:5px;}
+.slot .crop{position:absolute; width:10px; height:10px; border:0 solid #6b6b74;}
+.slot .crop.tl{top:-11px; left:-11px; border-left-width:1px; border-top-width:1px;}
+.slot .crop.tr{top:-11px; right:-11px; border-right-width:1px; border-top-width:1px;}
+.slot .crop.bl{bottom:-11px; left:-11px; border-left-width:1px; border-bottom-width:1px;}
+.slot .crop.br{bottom:-11px; right:-11px; border-right-width:1px; border-bottom-width:1px;}
+.psheet .slabel{position:absolute; left:0; bottom:.06in; width:100%; text-align:center;
+  font-family:var(--mono); font-size:6.5px; letter-spacing:.24em; color:#8a8a93;}
 
 @media print{
-  @page{size:letter portrait; margin:0.25in;}
+  @page{size:letter portrait; margin:0.4in;}
   html,body{background:#fff !important; background-image:none !important;}
   body>*{display:none !important;}
   #printStage{display:block !important;}
-  #rain,.veil{display:none !important;}
-  .sheet{page-break-after:always; break-after:page;}
-  .sheet:last-child{page-break-after:auto; break-after:auto;}
-  .slot,.card{page-break-inside:avoid; break-inside:avoid;}
-  .card{box-shadow:none !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  .psheet{break-after:page; page-break-after:always;}
+  .psheet:last-child{break-after:auto; page-break-after:auto;}
+  .slot,.card{break-inside:avoid; page-break-inside:avoid;}
+  .card{box-shadow:none !important;}
+  *{-webkit-print-color-adjust:exact !important; print-color-adjust:exact !important;}
   .card .c-holo,.card .c-beam,.card .c-por-beam{animation:none !important;}
 }
 
-/* responsive: stack the editor above the preview */
 @media (max-width:1040px){
   .main{grid-template-columns:1fr; padding:12px;}
   .editor{max-height:none;}
@@ -406,12 +400,11 @@ body{
 
 <div class="shell">
 
-  <!-- ================= TOP NAV ================= -->
   <header class="nav">
     <div class="nav-sigil" id="navSigil"></div>
     <div>
       <div class="nav-t">EVIL IRIS <em>//</em> PERSONNEL SYSTEM</div>
-      <div class="nav-s">IDENTIFICATION &amp; CREDENTIAL MANUFACTURE // v2.4</div>
+      <div class="nav-s">IDENTIFICATION &amp; CREDENTIAL MANUFACTURE // v2.6</div>
     </div>
     <div class="nav-sp"></div>
     <div class="clock" id="clock">--:--:-- UTC</div>
@@ -533,20 +526,29 @@ body{
         </div>
 
         <div class="grp">
-          <div class="grp-h">OUTPUT</div>
-          <label class="tog"><input type="checkbox" id="oSafe"> PRINT SAFE — DISABLE ANIMATION</label>
-          <label class="tog"><input type="checkbox" id="oQrContact"> INCLUDE EMAIL &amp; BASE IN QR PAYLOAD</label>
-          <label class="tog"><input type="checkbox" id="oBacks" checked> PRINT CARD REVERSE ON SECOND PAGE</label>
-          <label class="tog"><input type="checkbox" id="oCut" checked> SHOW CUT LINES ON PRINT SHEET</label>
-          <label class="f"><span>PRINT SHEET LAYOUT</span>
+          <div class="grp-h">PRINT SHEET</div>
+          <label class="f"><span>CARDS PER PAGE</span>
             <select id="fSheet">
-              <option value="1">1 CARD PER PAGE — CENTRED</option>
-              <option value="2" selected>2 CARDS PER PAGE</option>
-              <option value="4">4 CARDS PER PAGE</option>
+              <option value="1">1 PER PAGE</option>
+              <option value="2" selected>2 PER PAGE</option>
+              <option value="4">4 PER PAGE</option>
+              <option value="6">6 PER PAGE</option>
+              <option value="8">8 PER PAGE — FULL SHEET</option>
             </select>
           </label>
+          <div class="readout"><span>SHEET FILL</span><b id="sheetOut">—</b></div>
+          <label class="tog"><input type="checkbox" id="oTrue"> LOCK TRUE SIZE — 4.00 × 2.50 IN</label>
+          <label class="tog"><input type="checkbox" id="oBacks" checked> PRINT REVERSE ON A SECOND PAGE</label>
+          <label class="tog"><input type="checkbox" id="oCut" checked> CUT LINES AND CROP MARKS</label>
           <label class="tog"><input type="checkbox" id="oRoster"> FILL SHEET FROM SAVED ROSTER</label>
-          <label class="f"><span>PNG EXPORT SCALE</span>
+          <div class="hint">In the browser print dialog set <b>Margins: Default</b>, <b>Scale: 100%</b>, switch <b>Headers and footers OFF</b> and <b>Background graphics ON</b>. Unlocked sheets scale cards to fill the page; locked sheets hold exact 4.00 × 2.50 in and centre the block.</div>
+        </div>
+
+        <div class="grp">
+          <div class="grp-h">EXPORT</div>
+          <label class="tog"><input type="checkbox" id="oSafe"> PRINT SAFE — DISABLE ANIMATION</label>
+          <label class="tog"><input type="checkbox" id="oQrContact"> INCLUDE EMAIL &amp; BASE IN QR PAYLOAD</label>
+          <label class="f"><span>PNG SCALE</span>
             <select id="fScale">
               <option value="2">2× — 768 × 480</option>
               <option value="4" selected>4× — 1536 × 960 (384 dpi)</option>
@@ -554,6 +556,26 @@ body{
               <option value="8">8× — 3072 × 1920 (768 dpi)</option>
             </select>
           </label>
+          <div class="row">
+            <label class="f"><span>VIDEO FRAME</span>
+              <select id="fVidSize">
+                <option value="1280x800">1280 × 800 — CARD RATIO</option>
+                <option value="1920x1200" selected>1920 × 1200 — CARD RATIO</option>
+                <option value="1920x1080">1920 × 1080 — 16:9</option>
+                <option value="1080x1920">1080 × 1920 — VERTICAL</option>
+              </select>
+            </label>
+            <label class="f"><span>VIDEO LENGTH</span>
+              <select id="fVidLen">
+                <option value="6">6 SECONDS</option>
+                <option value="10" selected>10 SECONDS</option>
+                <option value="15">15 SECONDS</option>
+              </select>
+            </label>
+          </div>
+          <label class="tog"><input type="checkbox" id="oVidFlip" checked> FLIP TO REVERSE HALFWAY THROUGH</label>
+          <label class="tog"><input type="checkbox" id="oVidGlitch" checked> GLITCH BURSTS, HOLO SWEEP AND SCANLINES</label>
+          <div class="hint">Video records the card as a looping motion piece — boot-in wipe, holographic sweep, travelling scan beam and chromatic tearing. Saved as MP4 where the browser supports it, otherwise WebM.</div>
         </div>
 
       </div>
@@ -568,7 +590,6 @@ body{
           <div class="face-lab">FACE A // OBVERSE</div>
           <div class="stagewrap" id="wrapA"><div class="stage" id="stageA">
 
-            <!-- ============ CARD FRONT ============ -->
             <div class="stage-slot"><div class="card card-front" id="cardFront" data-cls="architect">
               <div class="c-bg"></div><div class="c-grid"></div><div class="c-holo"></div>
               <div class="c-flash"></div>
@@ -581,7 +602,7 @@ body{
                 </div>
                 <div class="c-clr">
                   <span class="c-clr-l">CLEARANCE</span>
-                  <span class="c-clr-v" data-f="clr">LEVEL 07 <b data-f="clrName">BLACK</b></span>
+                  <span class="c-clr-v" data-f="clr">LEVEL 07 <b>BLACK</b></span>
                 </div>
               </header>
 
@@ -653,7 +674,7 @@ body{
                         <path d="M21 2v38M2 21h38" stroke-width=".4"/>
                       </g>
                       <g stroke="var(--accent2)" stroke-width=".9" opacity=".9" fill="none">
-                        <path d="M21 21 L36 14" />
+                        <path d="M21 21 L36 14"/>
                         <circle cx="36" cy="14" r="1.4" fill="var(--accent2)" stroke="none"/>
                       </g>
                       <g fill="var(--magenta)" opacity=".85">
@@ -691,7 +712,6 @@ body{
           <div class="face-lab">FACE B // REVERSE</div>
           <div class="stagewrap" id="wrapB"><div class="stage" id="stageB">
 
-            <!-- ============ CARD BACK ============ -->
             <div class="stage-slot"><div class="card card-back" id="cardBack" data-cls="architect">
               <div class="c-bg"></div><div class="c-grid"></div><div class="c-holo"></div>
               <div class="b-watermark" data-sigil></div>
@@ -720,14 +740,14 @@ body{
                 <div class="b-right">
                   <div class="b-qr" data-f="qrBack"></div>
                   <div class="b-lab" style="justify-content:center">SCAN TO VERIFY</div>
-                  <div class="b-txt" style="font-size:4px;line-height:1.5;text-align:center;opacity:.6" data-f="custom">—</div>
+                  <div class="b-txt" style="font-size:4.2px;line-height:1.5;text-align:center;opacity:.6" data-f="custom">—</div>
                 </div>
               </div>
 
               <footer class="b-foot">
                 <div class="b-warn">
                   <b>PROPERTY OF EVIL IRIS INC. — NOT TRANSFERABLE.</b><br>
-                  This credential remains the property of Evil Iris Inc. and must be surrendered on request. Unauthorised duplication, alteration or possession is prosecuted under corporate directive. Decorative verification elements only — this card performs no live biometric authentication.
+                  This credential remains the property of Evil Iris Inc. and must be surrendered on request. Unauthorised duplication or alteration is prosecuted under corporate directive. Verification graphics are decorative — this card performs no live biometric authentication.
                 </div>
                 <div class="c-micro" style="margin-top:2px"><span data-f="pidm">EI//0001//IRIS</span><span data-f="revhash">REV 0000</span><span>EVIL IRIS INC.</span></div>
               </footer>
@@ -743,6 +763,7 @@ body{
         <button class="btn cy" id="btnPrint">PRINT CARD</button>
         <button class="btn" id="btnPng">DOWNLOAD PNG</button>
         <button class="btn" id="btnSvg">DOWNLOAD SVG</button>
+        <button class="btn cy" id="btnVid">EXPORT VIDEO</button>
         <button class="btn mg" id="btnReset">RESET</button>
       </div>
     </section>
@@ -765,29 +786,27 @@ body{
    Module map
      1. QR       — real QR encoder (byte mode, ECC L, versions 1-10)
      2. CODE39   — real Code 39 barcode geometry
-     3. RNG      — deterministic pseudo-random so decorative data stops
-                   flickering on every keystroke
+     3. RNG      — deterministic pseudo-random telemetry
      4. SIGIL    — the Evil Iris aperture mark, inline SVG
      5. DATA     — card classes, clearance ladder, defaults
      6. STORE    — localStorage: counter, working record, roster, prefs
      7. RENDER   — writes a record into any card element
-     8. PHOTO    — upload, zoom, pan
-     9. EXPORT   — SVG / PNG via foreignObject, print sheets
-    10. APP      — wiring, ambient effects
+     8. EXPORT   — SVG / PNG via foreignObject
+     9. SHEET    — print layout solver + print stage builder
+    10. VIDEO    — canvas compositor + MediaRecorder
+    11. APP      — wiring, ambient effects
    ========================================================================== */
 
 /* ---------------------------------------------------------------- 1. QR --
    Byte mode, error correction level L, versions 1 through 10.
-   Output is verified byte-for-byte against a reference encoder.       */
+   Verified module-for-module against a reference encoder.            */
 const QR = (function () {
-  // [ecCodewordsPerBlock, group1Blocks, group1Data, group2Blocks, group2Data]
   const ECL = [
     [7,1,19,0,0],[10,1,34,0,0],[15,1,55,0,0],[20,1,80,0,0],[26,1,108,0,0],
     [18,2,68,0,0],[20,2,78,0,0],[24,2,97,0,0],[30,2,116,0,0],[18,2,68,2,69]
   ];
   const ALIGN = [[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50]];
 
-  // GF(256) log/antilog tables for Reed-Solomon
   const EXP = new Array(512), LOG = new Array(256);
   (function(){ let x=1; for(let i=0;i<255;i++){EXP[i]=x; LOG[x]=i; x<<=1; if(x&0x100)x^=0x11d;} for(let i=255;i<512;i++)EXP[i]=EXP[i-255]; })();
   const gmul=(a,b)=>(a===0||b===0)?0:EXP[LOG[a]+LOG[b]];
@@ -807,14 +826,14 @@ const QR = (function () {
   function encode(text){
     const bytes=utf8(text);
     let version=-1;
-    for(let v=1;v<=10;v++){ const [ ,b1,d1,b2,d2]=ECL[v-1]; const dataCw=b1*d1+b2*d2;
+    for(let v=1;v<=10;v++){ const a=ECL[v-1]; const dataCw=a[1]*a[2]+a[3]*a[4];
       const cc=v<10?8:16; if(bytes.length*8+4+cc<=dataCw*8){version=v;break;} }
     if(version<0) throw new Error('QR payload too long');
 
-    const [ecLen,b1,d1,b2,d2]=ECL[version-1];
+    const ecLen=ECL[version-1][0], b1=ECL[version-1][1], d1=ECL[version-1][2],
+          b2=ECL[version-1][3], d2=ECL[version-1][4];
     const dataCw=b1*d1+b2*d2, ccBits=version<10?8:16;
 
-    // bit stream: mode + length + payload + terminator + pad
     const bits=[]; const push=(v,n)=>{for(let i=n-1;i>=0;i--)bits.push((v>>i)&1);};
     push(4,4); push(bytes.length,ccBits); bytes.forEach(b=>push(b,8));
     const cap=dataCw*8;
@@ -823,7 +842,6 @@ const QR = (function () {
     const pads=[0xec,0x11]; let p=0; while(bits.length<cap) push(pads[p++%2],8);
     const cws=[]; for(let i=0;i<bits.length;i+=8){ let v=0; for(let j=0;j<8;j++) v=(v<<1)|bits[i+j]; cws.push(v); }
 
-    // split into blocks, add ECC, interleave
     const blocks=[],ecBlocks=[]; let off=0;
     for(let i=0;i<b1;i++){const b=cws.slice(off,off+d1); off+=d1; blocks.push(b); ecBlocks.push(rsEncode(b,ecLen));}
     for(let i=0;i<b2;i++){const b=cws.slice(off,off+d2); off+=d2; blocks.push(b); ecBlocks.push(rsEncode(b,ecLen));}
@@ -831,7 +849,6 @@ const QR = (function () {
     for(let i=0;i<maxD;i++) for(const b of blocks) if(i<b.length) final.push(b[i]);
     for(let i=0;i<ecLen;i++) for(const b of ecBlocks) final.push(b[i]);
 
-    // function patterns
     const size=version*4+17;
     const m=Array.from({length:size},()=>new Array(size).fill(0));
     const res=Array.from({length:size},()=>new Array(size).fill(false));
@@ -855,7 +872,6 @@ const QR = (function () {
       const vi=(version<<12)|d;
       for(let i=0;i<18;i++){ const bit=(vi>>i)&1; set(Math.floor(i/3),size-11+(i%3),bit); set(size-11+(i%3),Math.floor(i/3),bit); } }
 
-    // zigzag data placement
     const dataBits=[]; for(const cw of final) for(let i=7;i>=0;i--) dataBits.push((cw>>i)&1);
     let bi=0, up=true;
     for(let col=size-1;col>0;col-=2){
@@ -912,7 +928,7 @@ const QR = (function () {
     return best;
   }
 
-  /* Renders as inline SVG (not canvas) so it survives cloning and export. */
+  /* Inline SVG rather than canvas, so it survives cloning and export. */
   function svg(text, quiet){
     let m; try{ m=encode(text); }catch(e){ m=encode('EVIL IRIS PERSONNEL'); }
     const n=m.length, q=(quiet===undefined?2:quiet), dim=n+q*2;
@@ -925,8 +941,7 @@ const QR = (function () {
   return { encode, svg };
 })();
 
-/* ------------------------------------------------------------ 2. CODE39 --
-   Genuine Code 39 element widths, drawn as flex children.            */
+/* ------------------------------------------------------------ 2. CODE39 -- */
 const CODE39 = (function(){
   const T={'0':'nnnwwnwnn','1':'wnnwnnnnw','2':'nnwwnnnnw','3':'wnwwnnnnn','4':'nnnwwnnnw',
   '5':'wnnwwnnnn','6':'nnwwwnnnn','7':'nnnwnnwnw','8':'wnnwnnwnn','9':'nnwwnnwnn',
@@ -937,32 +952,27 @@ const CODE39 = (function(){
   'U':'wwnnnnnnw','V':'nwwnnnnnw','W':'wwwnnnnnn','X':'nwnnwnnnw','Y':'wwnnwnnnn',
   'Z':'nwwnwnnnn','-':'nwnnnnwnw','.':'wwnnnnwnn',' ':'nwwnnnwnn','$':'nwnwnwnnn',
   '/':'nwnwnnnwn','+':'nwnnnwnwn','%':'nnnwnwnwn','*':'nwnnwnwnn'};
-  /* Returns {units:[{w,bar}], total} — the caller turns this into DOM. */
   function bars(text){
     const s='*'+String(text).toUpperCase().replace(/[^0-9A-Z\-\. \$\/\+%]/g,'-')+'*';
     const out=[]; let total=0;
     for(let i=0;i<s.length;i++){
       const pat=T[s[i]]||T['-'];
-      for(let j=0;j<9;j++){ const w=pat[j]==='w'?3:1; out.push({w,bar:j%2===0}); total+=w; }
+      for(let j=0;j<9;j++){ const w=pat[j]==='w'?3:1; out.push({w:w,bar:j%2===0}); total+=w; }
       if(i<s.length-1){ out.push({w:1,bar:false}); total+=1; }
     }
-    return {units:out,total};
+    return {units:out,total:total};
   }
   return { bars };
 })();
 
-/* --------------------------------------------------------------- 3. RNG --
-   Deterministic per personnel number: the "telemetry" on a given card is
-   always identical, so it reads as data rather than noise.            */
+/* --------------------------------------------------------------- 3. RNG -- */
 function hash32(str){ let h=2166136261>>>0; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } return h>>>0; }
 function mulberry(seed){ return function(){ seed|=0; seed=seed+0x6D2B79F5|0;
   let t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t;
   return ((t^t>>>14)>>>0)/4294967296; }; }
 function hexStr(rnd,len){ const H='0123456789ABCDEF'; let s=''; for(let i=0;i<len;i++) s+=H[(rnd()*16)|0]; return s; }
 
-/* ------------------------------------------------------------- 4. SIGIL --
-   The Evil Iris aperture mark: six blades, a ticked ring, a pulsing pupil.
-   Colours come from CSS custom properties so every class re-tints it.  */
+/* ------------------------------------------------------------- 4. SIGIL -- */
 function sigilSVG(){
   let blades='';
   for(let i=0;i<6;i++){
@@ -1027,10 +1037,9 @@ const STORE={
 };
 const padId=n=>'EI-'+String(n).padStart(4,'0');
 
-/* ------------------------------------------------------------- 7. RENDER --
-   renderCard(el, data) writes a record into ANY card element, which is what
-   makes multi-card print sheets and off-screen export clones possible.  */
+/* ------------------------------------------------------------- 7. RENDER -- */
 function digits(pid){ const m=String(pid).match(/(\d+)\s*$/); return m?m[1]:'0000'; }
+function escapeHTML(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 function qrPayload(d,withContact){
   const L=['EVIL IRIS PERSONNEL','ID: '+d.pid,'NAME: '+d.name,'ROLE: '+d.role,
@@ -1053,7 +1062,6 @@ function renderCard(root,d,opts){
   const put=(k,v)=>{ root.querySelectorAll('[data-f="'+k+'"]').forEach(n=>{ n.textContent=v; }); };
   const html=(k,v)=>{ root.querySelectorAll('[data-f="'+k+'"]').forEach(n=>{ n.innerHTML=v; }); };
 
-  // identity
   const nm=(d.name||'UNNAMED SUBJECT').toUpperCase();
   put('name',nm);
   root.querySelectorAll('[data-f="name"]').forEach(n=>{
@@ -1062,7 +1070,6 @@ function renderCard(root,d,opts){
   put('call',(d.call||'NO CALLSIGN').toUpperCase());
   put('pid',d.pid); put('pidm','EI//'+dg+'//IRIS');
 
-  // assignment
   put('lRole',cls.role); put('lUnit',cls.unit);
   put('role',(d.role||'—').toUpperCase());
   put('div',(d.div||'—').toUpperCase());
@@ -1070,10 +1077,9 @@ function renderCard(root,d,opts){
   put('spec',(d.spec||'—').toUpperCase());
   put('stat',(d.stat||'ACTIVE').toUpperCase());
   put('clr2','LEVEL '+clr.n+' // '+clr.t);
-  html('clr','LEVEL '+clr.n+' <b data-f="clrName">'+clr.t+'</b>');
+  html('clr','LEVEL '+clr.n+' <b>'+clr.t+'</b>');
   put('credLabel',cls.cred+' // '+cls.code);
 
-  // portrait
   const img=root.querySelector('[data-f="photo"]');
   const empty=root.querySelector('[data-f="photoEmpty"]');
   if(img){
@@ -1083,13 +1089,12 @@ function renderCard(root,d,opts){
     } else { img.removeAttribute('src'); img.hidden=true; if(empty) empty.style.display=''; }
   }
 
-  // deterministic telemetry
   const subj=hexStr(rnd,8);
   put('subj','SUBJ 0x'+subj);
   const m1=88+Math.floor(rnd()*11), m2=84+Math.floor(rnd()*14), m3=Math.max(40,clr.auth-6+Math.floor(rnd()*8));
-  [['m1',m1],['m2',m2],['m3',m3]].forEach(([k,v])=>{
-    const b=root.querySelector('[data-f="'+k+'"]'); if(b) b.style.width=v+'%';
-    put(k+'v',v);
+  [['m1',m1],['m2',m2],['m3',m3]].forEach(pair=>{
+    const b=root.querySelector('[data-f="'+pair[0]+'"]'); if(b) b.style.width=pair[1]+'%';
+    put(pair[0]+'v',pair[1]);
   });
   const lat=(rnd()*8+30).toFixed(4), lon=(rnd()*30+95).toFixed(4);
   put('coords',lat+'N '+lon+'W // GRID '+hexStr(rnd,4));
@@ -1101,7 +1106,6 @@ function renderCard(root,d,opts){
   let stripe=''; for(let i=0;i<14;i++) stripe+=hexStr(rnd,8)+' ';
   put('stripe',stripe.trim());
 
-  // radar tick marks
   const ticks=root.querySelector('[data-f="ticks"]');
   if(ticks){ let t='';
     for(let i=0;i<24;i++){ const a=i*15*Math.PI/180, r1=19, r2=i%6===0?15:17.5;
@@ -1109,19 +1113,16 @@ function renderCard(root,d,opts){
          'L'+(21+Math.cos(a)*r2).toFixed(1)+' '+(21+Math.sin(a)*r2).toFixed(1)+'"/>'; }
     ticks.innerHTML=t; }
 
-  // barcode (Code 39 of the personnel number)
   const bc=root.querySelector('[data-f="barcode"]');
-  if(bc){ const {units,total}=CODE39.bars(d.pid||'EI-0000');
+  if(bc){ const b=CODE39.bars(d.pid||'EI-0000');
     let h='';
-    units.forEach(u=>{ h+='<i class="'+(u.bar?'':'sp')+'" style="width:'+(u.w/total*100).toFixed(4)+'%"></i>'; });
+    b.units.forEach(u=>{ h+='<i class="'+(u.bar?'':'sp')+'" style="width:'+(u.w/b.total*100).toFixed(4)+'%"></i>'; });
     bc.innerHTML=h; }
 
-  // QR codes
   const payload=qrPayload(d,!!opts.qrContact);
   const qf=root.querySelector('[data-f="qrFront"]'); if(qf) qf.innerHTML=QR.svg(payload,2);
   const qb=root.querySelector('[data-f="qrBack"]');  if(qb) qb.innerHTML=QR.svg(payload,2);
 
-  // reverse-face dossier
   put('bio',d.bio||'No biographical record on file.');
   const chips=root.querySelector('[data-f="skills"]');
   if(chips){ const list=(d.skills||'').split(',').map(s=>s.trim()).filter(Boolean);
@@ -1137,18 +1138,16 @@ function renderCard(root,d,opts){
   put('sec',d.sec||'');
   put('custom',d.custom||'');
 
-  // sigils
   root.querySelectorAll('[data-sigil]').forEach(n=>{ if(!n.firstChild) n.innerHTML=sigilSVG(); });
-
   root.classList.toggle('print-safe',!!opts.printSafe);
 }
-function escapeHTML(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 /* --------------------------------------------------------------- 8. APP -- */
 const $=id=>document.getElementById(id);
 const FRONT=$('cardFront'), BACK=$('cardBack');
+const CARD_W=384, CARD_H=240;                 // px == 4.00in x 2.50in at 96dpi
 let state=Object.assign({},DEFAULTS);
-let prefs=STORE.get(STORE.K.prefs,{safe:false,qrContact:false,backs:true,cut:true,sheet:'2',scale:'4',roster:false});
+let prefs=STORE.get(STORE.K.prefs,{});
 
 const FIELD_MAP=[
   ['fName','name'],['fCall','call'],['fPid','pid'],['fCls','cls'],['fRole','role'],
@@ -1159,13 +1158,13 @@ const FIELD_MAP=[
 ];
 
 function formToState(){
-  FIELD_MAP.forEach(([id,key])=>{ const el=$(id); if(!el) return;
+  FIELD_MAP.forEach(pair=>{ const el=$(pair[0]); if(!el) return;
     let v=el.value;
-    if(key==='clr'||key==='zoom'||key==='px'||key==='py') v=parseInt(v,10)||0;
-    state[key]=v; });
+    if(pair[1]==='clr'||pair[1]==='zoom'||pair[1]==='px'||pair[1]==='py') v=parseInt(v,10)||0;
+    state[pair[1]]=v; });
 }
 function stateToForm(){
-  FIELD_MAP.forEach(([id,key])=>{ const el=$(id); if(el) el.value=state[key]; });
+  FIELD_MAP.forEach(pair=>{ const el=$(pair[0]); if(el) el.value=state[pair[1]]; });
   $('vZoom').textContent=state.zoom+'%'; $('vPx').textContent=state.px+'%'; $('vPy').textContent=state.py+'%';
 }
 function opts(){ return {printSafe:$('oSafe').checked, qrContact:$('oQrContact').checked}; }
@@ -1179,7 +1178,6 @@ function paint(){
 }
 function commit(){ formToState(); paint(); }
 
-/* --- personnel numbering ------------------------------------------------ */
 function generateNumber(){
   const n=STORE.nextNumber();
   state.pid=padId(n);
@@ -1188,18 +1186,16 @@ function generateNumber(){
   toast('PERSONNEL NUMBER ISSUED // '+state.pid);
 }
 
-/* --- toast -------------------------------------------------------------- */
 let toastT;
 function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('on');
-  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),2200); }
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),2600); }
 
-/* --- 8b. PHOTO ---------------------------------------------------------- */
+/* photo upload, downscaled so localStorage and exports stay small */
 $('fPhoto').addEventListener('change',e=>{
   const f=e.target.files&&e.target.files[0]; if(!f) return;
   if(!/^image\/(jpeg|png|webp)$/.test(f.type)){ toast('UNSUPPORTED FORMAT — USE JPG, PNG OR WEBP'); return; }
   const r=new FileReader();
   r.onload=()=>{
-    // Downscale to a sane long edge so localStorage and exports stay small.
     const img=new Image();
     img.onload=()=>{
       const max=900, sc=Math.min(1,max/Math.max(img.width,img.height));
@@ -1218,10 +1214,10 @@ $('btnCrop').addEventListener('click',()=>{
   state.zoom=100; state.px=50; state.py=50; stateToForm(); paint(); toast('CROP RESET');
 });
 
-/* --- 9. EXPORT ----------------------------------------------------------
+/* ------------------------------------------------------------ 9. EXPORT --
    The card is HTML, so it is exported by wrapping a serialised clone in an
-   SVG <foreignObject> together with the card stylesheet. That single SVG is
-   the .svg download, and rasterising it through an <img> gives the .png.  */
+   SVG <foreignObject> alongside the card stylesheet. That SVG is the .svg
+   download; rasterising it through an <img> gives .png and video frames. */
 let FONT_CSS=null;
 async function embeddedFontCSS(){
   if(FONT_CSS!==null) return FONT_CSS;
@@ -1237,7 +1233,7 @@ async function embeddedFontCSS(){
       for(let i=0;i<b.length;i++) bin+=String.fromCharCode(b[i]);
       return [u,'data:font/woff2;base64,'+btoa(bin)];
     }));
-    let out=css; parts.forEach(([u,dataUrl])=>{ out=out.split(u).join(dataUrl); });
+    let out=css; parts.forEach(p=>{ out=out.split(p[0]).join(p[1]); });
     clearTimeout(kill);
     FONT_CSS=out;
   }catch(e){ FONT_CSS=''; }   // offline: exports fall back to system faces
@@ -1249,60 +1245,97 @@ async function cardSVG(cardEl,scale){
   clone.classList.add('print-safe');
   clone.style.margin='0';
   const body=new XMLSerializer().serializeToString(clone);
-  const css=document.getElementById('cardCss').textContent
-              .replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const css=document.getElementById('cardCss').textContent.replace(/&/g,'&amp;').replace(/</g,'&lt;');
   const fonts=(await embeddedFontCSS()).replace(/&/g,'&amp;').replace(/</g,'&lt;');
-  const W=384,H=240;
-  return '<svg xmlns="http://www.w3.org/2000/svg" width="'+(W*scale)+'" height="'+(H*scale)+'" viewBox="0 0 '+W+' '+H+'">'+
-    '<foreignObject x="0" y="0" width="'+W+'" height="'+H+'">'+
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="'+(CARD_W*scale)+'" height="'+(CARD_H*scale)+'" viewBox="0 0 '+CARD_W+' '+CARD_H+'">'+
+    '<foreignObject x="0" y="0" width="'+CARD_W+'" height="'+CARD_H+'">'+
       '<div xmlns="http://www.w3.org/1999/xhtml"><style>'+fonts+'\n'+css+'</style>'+body+'</div>'+
     '</foreignObject></svg>';
 }
 function download(blob,filename){
   const url=URL.createObjectURL(blob), a=document.createElement('a');
   a.href=url; a.download=filename; document.body.appendChild(a); a.click();
-  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); },600);
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); },800);
 }
 function fileStem(face){
   return 'EVIL-IRIS-'+String(state.pid||'EI-0000').replace(/[^A-Za-z0-9-]/g,'')+'-'+
          String(state.name||'SUBJECT').toUpperCase().replace(/[^A-Z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+face;
 }
+function rasterise(cardEl,scale){
+  return cardSVG(cardEl,scale).then(svg=>new Promise((res,rej)=>{
+    const img=new Image();
+    img.onload=()=>res(img);
+    img.onerror=()=>rej(new Error('raster failed'));
+    img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+  }));
+}
 async function exportSVG(){
   toast('RENDERING VECTOR…');
-  for(const [el,face] of [[FRONT,'FRONT'],[BACK,'BACK']]){
-    const svg=await cardSVG(el,1);
-    download(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}),fileStem(face)+'.svg');
+  const faces=[[FRONT,'FRONT'],[BACK,'BACK']];
+  for(const f of faces){
+    const svg=await cardSVG(f[0],1);
+    download(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}),fileStem(f[1])+'.svg');
   }
   toast('SVG WRITTEN // FRONT + BACK');
 }
 async function exportPNG(){
   const scale=parseInt($('fScale').value,10)||4;
-  toast('RASTERISING '+ (384*scale) +' × ' + (240*scale) +'…');
-  for(const [el,face] of [[FRONT,'FRONT'],[BACK,'BACK']]){
-    const svg=await cardSVG(el,scale);
-    const url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
-    await new Promise((resolve)=>{
-      const img=new Image();
-      img.onload=()=>{
-        const cv=document.createElement('canvas');
-        cv.width=384*scale; cv.height=240*scale;
-        const ctx=cv.getContext('2d');
-        ctx.fillStyle='#05060a'; ctx.fillRect(0,0,cv.width,cv.height);
-        ctx.drawImage(img,0,0,cv.width,cv.height);
-        cv.toBlob(b=>{ if(b) download(b,fileStem(face)+'.png'); resolve(); },'image/png');
-      };
-      img.onerror=()=>{ toast('RASTER FAILED — USE PRINT ▸ SAVE AS PDF'); resolve(); };
-      img.src=url;
-    });
+  toast('RASTERISING '+(CARD_W*scale)+' × '+(CARD_H*scale)+'…');
+  const faces=[[FRONT,'FRONT'],[BACK,'BACK']];
+  for(const f of faces){
+    try{
+      const img=await rasterise(f[0],scale);
+      const cv=document.createElement('canvas');
+      cv.width=CARD_W*scale; cv.height=CARD_H*scale;
+      const ctx=cv.getContext('2d');
+      ctx.fillStyle='#05060a'; ctx.fillRect(0,0,cv.width,cv.height);
+      ctx.drawImage(img,0,0,cv.width,cv.height);
+      await new Promise(r=>cv.toBlob(b=>{ if(b) download(b,fileStem(f[1])+'.png'); r(); },'image/png'));
+    }catch(e){ toast('RASTER FAILED — USE PRINT ▸ SAVE AS PDF'); return; }
   }
+  toast('PNG WRITTEN // FRONT + BACK');
 }
 
-/* --- print sheets ------------------------------------------------------- */
+/* --------------------------------------------------------------- 10. SHEET --
+   Layout solver. A letter page at 0.4in margins gives a 7.7 x 10.2in box;
+   the sheet is deliberately smaller (7.4 x 9.7in) so headers, footers and
+   printer hardware margins can never push a row onto a second page — the
+   bug that turned a 4-up sheet into three cards and a sliver.
+   For each card count it tries every column split and keeps the one that
+   makes the cards biggest, so the page actually fills up.               */
+const SHEET={ pageW:7.4, pageH:9.7, cardW:4.0, cardH:2.5, gap:0.16 };
+
+function sheetLayout(n,trueSize){
+  let best=null;
+  for(let cols=1;cols<=n;cols++){
+    const rows=Math.ceil(n/cols);
+    const s=Math.min(
+      (SHEET.pageW-(cols-1)*SHEET.gap)/(cols*SHEET.cardW),
+      (SHEET.pageH-(rows-1)*SHEET.gap)/(rows*SHEET.cardH)
+    );
+    if(s<=0) continue;
+    // Bigger cards win outright; when two grids are within 5% of each other
+    // the wider grid wins, because 2x2 balances a page better than 1x4.
+    if(!best || s>best.s*1.05 || (s>best.s*0.95 && cols>best.cols)) best={cols:cols,rows:rows,s:s};
+  }
+  if(!best) best={cols:1,rows:1,s:1};
+  if(trueSize) best.s=Math.min(best.s,1);
+  return best;
+}
+function sheetReadout(){
+  const n=parseInt($('fSheet').value,10)||1;
+  const L=sheetLayout(n,$('oTrue').checked);
+  const w=(SHEET.cardW*L.s).toFixed(2), h=(SHEET.cardH*L.s).toFixed(2);
+  $('sheetOut').textContent=L.cols+' × '+L.rows+' GRID // '+w+' × '+h+' IN';
+}
+
 function buildPrintStage(){
   const stage=$('printStage'); stage.innerHTML='';
   const per=parseInt($('fSheet').value,10)||1;
+  const L=sheetLayout(per,$('oTrue').checked);
   const cut=$('oCut').checked;
   const withBacks=$('oBacks').checked;
+  const gapPx=SHEET.gap*96;
 
   // Which records fill the sheet: the working record, or the saved roster.
   let records=[state];
@@ -1314,26 +1347,259 @@ function buildPrintStage(){
 
   const o={printSafe:true,qrContact:$('oQrContact').checked};
 
-  const makeSheet=(templateEl)=>{
-    const sheet=document.createElement('div'); sheet.className='sheet';
-    for(let i=0;i<per;i++){
+  const makeSheet=(templateEl,mirror,label)=>{
+    const sheet=document.createElement('div'); sheet.className='psheet';
+    const grid=document.createElement('div'); grid.className='pgrid';
+    grid.style.gridTemplateColumns='repeat('+L.cols+', '+(CARD_W*L.s)+'px)';
+    grid.style.gridTemplateRows='repeat('+L.rows+', '+(CARD_H*L.s)+'px)';
+    grid.style.gap=gapPx+'px';
+
+    // Duplex: mirror each row so backs land on the correct fronts when the
+    // stack is flipped on the long edge.
+    const order=[];
+    for(let r=0;r<L.rows;r++){
+      const row=[];
+      for(let c=0;c<L.cols;c++){ const i=r*L.cols+c; if(i<per) row.push(i); }
+      order.push(mirror?row.slice().reverse():row);
+    }
+
+    order.forEach(row=>row.forEach(i=>{
       const slot=document.createElement('div');
       slot.className='slot'+(cut?' cut':'');
+      slot.style.width=(CARD_W*L.s)+'px';
+      slot.style.height=(CARD_H*L.s)+'px';
       if(cut) slot.innerHTML='<i class="crop tl"></i><i class="crop tr"></i><i class="crop bl"></i><i class="crop br"></i>';
       const card=templateEl.cloneNode(true);
       card.removeAttribute('id');
+      card.style.transform='scale('+L.s+')';
       renderCard(card,records[i],o);
       slot.appendChild(card);
-      sheet.appendChild(slot);
+      grid.appendChild(slot);
+    }));
+
+    sheet.appendChild(grid);
+    if(label){
+      const tag=document.createElement('div');
+      tag.className='slabel'; tag.textContent=label;
+      sheet.appendChild(tag);
     }
     return sheet;
   };
 
-  stage.appendChild(makeSheet(FRONT));
-  if(withBacks) stage.appendChild(makeSheet(BACK));
+  const size=(SHEET.cardW*L.s).toFixed(2)+' × '+(SHEET.cardH*L.s).toFixed(2)+' IN';
+  stage.appendChild(makeSheet(FRONT,false,'EVIL IRIS // OBVERSE — '+per+' UP — '+size));
+  if(withBacks) stage.appendChild(makeSheet(BACK,true,'EVIL IRIS // REVERSE — FLIP ON LONG EDGE'));
 }
 window.addEventListener('beforeprint',buildPrintStage);
 window.addEventListener('afterprint',()=>{ $('printStage').innerHTML=''; });
+
+/* --------------------------------------------------------------- 11. VIDEO --
+   Rasterises both faces once, then composites a motion piece on a canvas:
+   boot-in wipe, holographic sweep, travelling scan beam, chromatic tearing,
+   grain and vignette. MediaRecorder captures the canvas stream.        */
+const VIDEO=(function(){
+  let busy=false;
+
+  function pickMime(){
+    if(!window.MediaRecorder) return '';
+    const c=['video/mp4;codecs=avc1.42E01E','video/mp4',
+             'video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+    for(const m of c) if(MediaRecorder.isTypeSupported(m)) return m;
+    return '';
+  }
+  function noiseTile(){
+    const n=document.createElement('canvas'); n.width=n.height=128;
+    const c=n.getContext('2d'), d=c.createImageData(128,128);
+    for(let i=0;i<d.data.length;i+=4){
+      const v=180+Math.random()*75;
+      d.data[i]=d.data[i+1]=d.data[i+2]=v; d.data[i+3]=255;
+    }
+    c.putImageData(d,0,0);
+    return n;
+  }
+
+  async function record(){
+    if(busy) return;
+    const mime=pickMime();
+    if(!mime){ toast('VIDEO NOT SUPPORTED IN THIS BROWSER — TRY CHROME OR EDGE'); return; }
+
+    const dims=$('fVidSize').value.split('x');
+    const W=parseInt(dims[0],10), H=parseInt(dims[1],10);
+    const DUR=(parseInt($('fVidLen').value,10)||10)*1000;
+    const flip=$('oVidFlip').checked;
+    const fx=$('oVidGlitch').checked;
+
+    busy=true;
+    const btn=$('btnVid'); btn.disabled=true;
+    toast('RASTERISING FACES…');
+
+    let front,back;
+    try{
+      front=await rasterise(FRONT,4);
+      back =await rasterise(BACK,4);
+    }catch(e){ busy=false; btn.disabled=false; toast('VIDEO FAILED — CARD COULD NOT BE RASTERISED'); return; }
+
+    const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+    const ctx=cv.getContext('2d');
+    const noise=noiseTile();
+
+    // card geometry inside the frame
+    const pad=W>=H?0.90:0.94;
+    let cw=W*pad, ch=cw/(CARD_W/CARD_H);
+    if(ch>H*0.86){ ch=H*0.86; cw=ch*(CARD_W/CARD_H); }
+    const cx=(W-cw)/2, cy=(H-ch)/2;
+
+    // deterministic glitch schedule
+    const rnd=mulberry(hash32(state.pid+'video'));
+    const bursts=[];
+    for(let i=0;i<7;i++) bursts.push({at:0.12+rnd()*0.8, len:0.012+rnd()*0.03, amp:0.004+rnd()*0.02});
+
+    const stream=cv.captureStream(60);
+    const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:14000000});
+    const chunks=[];
+    rec.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
+
+    const ext=mime.indexOf('mp4')>=0?'.mp4':'.webm';
+    const done=new Promise(res=>{
+      rec.onstop=()=>{
+        download(new Blob(chunks,{type:mime}),fileStem('MOTION')+ext);
+        res();
+      };
+    });
+
+    function drawFace(img,t){
+      // flip: horizontal squash through the midpoint, swapping faces
+      let sx=1, src=img;
+      if(flip){
+        const d=t-0.5, span=0.07;
+        if(Math.abs(d)<span){ sx=Math.abs(d)/span; }
+        src=d<0?front:back;
+      }
+      ctx.save();
+      ctx.translate(cx+cw/2,cy+ch/2);
+      ctx.scale(Math.max(sx,0.001),1);
+      ctx.drawImage(src,-cw/2,-ch/2,cw,ch);
+      ctx.restore();
+      return src;
+    }
+
+    function frame(t,elapsed){
+      ctx.globalCompositeOperation='source-over';
+      ctx.globalAlpha=1;
+      ctx.fillStyle='#05060a'; ctx.fillRect(0,0,W,H);
+
+      // backdrop glow
+      const g=ctx.createRadialGradient(W*0.5,H*0.35,0,W*0.5,H*0.35,W*0.75);
+      g.addColorStop(0,'rgba(124,58,237,.22)'); g.addColorStop(1,'rgba(5,6,10,0)');
+      ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+
+      const src=drawFace(front,t);
+
+      // boot-in wipe over the first 10%
+      if(t<0.10){
+        const p=t/0.10;
+        ctx.save();
+        ctx.globalCompositeOperation='source-over';
+        ctx.fillStyle='#05060a';
+        ctx.fillRect(cx,cy+ch*p,cw,ch*(1-p));
+        ctx.fillStyle='rgba(34,211,238,.85)';
+        ctx.fillRect(cx,cy+ch*p-2,cw,4);
+        ctx.restore();
+      }
+
+      if(fx){
+        // chromatic tearing bursts
+        bursts.forEach(b=>{
+          if(t>=b.at&&t<b.at+b.len){
+            const k=(t-b.at)/b.len;
+            const bands=6;
+            ctx.save();
+            ctx.globalCompositeOperation='lighter';
+            ctx.globalAlpha=0.45*(1-k);
+            for(let i=0;i<bands;i++){
+              const by=cy+(ch/bands)*i, bh=ch/bands;
+              const dx=(Math.sin((i+k*9)*3.1)*b.amp*W);
+              ctx.drawImage(src,0,(i/bands)*src.height,src.width,src.height/bands,
+                            cx+dx,by,cw,bh);
+            }
+            ctx.restore();
+          }
+        });
+
+        // holographic sweep
+        ctx.save();
+        ctx.globalCompositeOperation='screen';
+        const sweep=((t*1.6)%1)*2-0.5;
+        const lg=ctx.createLinearGradient(cx+cw*(sweep-0.25),cy,cx+cw*(sweep+0.25),cy+ch);
+        lg.addColorStop(0,'rgba(34,211,238,0)');
+        lg.addColorStop(0.45,'rgba(34,211,238,.22)');
+        lg.addColorStop(0.5,'rgba(168,85,247,.30)');
+        lg.addColorStop(0.55,'rgba(255,45,143,.22)');
+        lg.addColorStop(1,'rgba(255,45,143,0)');
+        ctx.fillStyle=lg; ctx.fillRect(cx,cy,cw,ch);
+        ctx.restore();
+
+        // travelling scan beam
+        ctx.save();
+        ctx.globalCompositeOperation='screen';
+        const by=cy+((elapsed/2600)%1)*ch;
+        const bg=ctx.createLinearGradient(0,by-ch*0.05,0,by+ch*0.05);
+        bg.addColorStop(0,'rgba(34,211,238,0)');
+        bg.addColorStop(0.5,'rgba(34,211,238,.30)');
+        bg.addColorStop(1,'rgba(34,211,238,0)');
+        ctx.fillStyle=bg; ctx.fillRect(cx,by-ch*0.05,cw,ch*0.1);
+        ctx.restore();
+
+        // CRT scanlines
+        ctx.save();
+        ctx.globalAlpha=0.22; ctx.fillStyle='#000';
+        for(let y=0;y<H;y+=3) ctx.fillRect(0,y,W,1);
+        ctx.restore();
+
+        // grain
+        ctx.save();
+        ctx.globalAlpha=0.05; ctx.globalCompositeOperation='overlay';
+        const ox=-Math.random()*128, oy=-Math.random()*128;
+        for(let x=ox;x<W;x+=128) for(let y=oy;y<H;y+=128) ctx.drawImage(noise,x,y);
+        ctx.restore();
+      }
+
+      // vignette
+      const vg=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.35,W/2,H/2,Math.max(W,H)*0.75);
+      vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,.75)');
+      ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
+
+      // fade in / out
+      if(t<0.04||t>0.97){
+        const a=t<0.04?1-t/0.04:(t-0.97)/0.03;
+        ctx.fillStyle='rgba(5,6,10,'+a.toFixed(3)+')'; ctx.fillRect(0,0,W,H);
+      }
+    }
+
+    frame(0,0);
+    rec.start();
+    const t0=performance.now();
+    toast('RECORDING // '+W+' × '+H+' // '+(DUR/1000)+'S');
+
+    await new Promise(res=>{
+      (function loop(){
+        const elapsed=performance.now()-t0;
+        const t=Math.min(elapsed/DUR,1);
+        frame(t,elapsed);
+        if(elapsed<DUR) requestAnimationFrame(loop);
+        else res();
+      })();
+    });
+
+    rec.stop();
+    await done;
+    stream.getTracks().forEach(tr=>tr.stop());
+    busy=false; btn.disabled=false;
+    toast('VIDEO WRITTEN // '+ext.slice(1).toUpperCase());
+  }
+
+  return { record };
+})();
 
 /* --- roster ------------------------------------------------------------- */
 function refreshRoster(sel){
@@ -1401,9 +1667,10 @@ $('btnGen').addEventListener('click',()=>{
   [FRONT,BACK].forEach(c=>{ c.classList.remove('gen'); void c.offsetWidth; c.classList.add('gen'); });
   toast('CREDENTIAL GENERATED // '+state.pid);
 });
-$('btnPrint').addEventListener('click',()=>{ commit(); buildPrintStage(); window.print(); });
+$('btnPrint').addEventListener('click',()=>{ commit(); buildPrintStage(); setTimeout(()=>window.print(),60); });
 $('btnPng').addEventListener('click',()=>{ commit(); exportPNG(); });
 $('btnSvg').addEventListener('click',()=>{ commit(); exportSVG(); });
+$('btnVid').addEventListener('click',()=>{ commit(); VIDEO.record(); });
 $('btnGenNum').addEventListener('click',generateNumber);
 $('btnReset').addEventListener('click',()=>{
   if(!confirm('Reset the form to the default record? Saved roster and the number sequence are kept.')) return;
@@ -1412,36 +1679,39 @@ $('btnReset').addEventListener('click',()=>{
 });
 
 /* --- live binding ------------------------------------------------------- */
-FIELD_MAP.forEach(([id])=>{
-  const el=$(id); if(!el) return;
+FIELD_MAP.forEach(pair=>{
+  const el=$(pair[0]); if(!el) return;
   el.addEventListener('input',()=>{
     commit();
-    if(id==='fZoom') $('vZoom').textContent=state.zoom+'%';
-    if(id==='fPx') $('vPx').textContent=state.px+'%';
-    if(id==='fPy') $('vPy').textContent=state.py+'%';
+    if(pair[0]==='fZoom') $('vZoom').textContent=state.zoom+'%';
+    if(pair[0]==='fPx') $('vPx').textContent=state.px+'%';
+    if(pair[0]==='fPy') $('vPy').textContent=state.py+'%';
   });
   el.addEventListener('change',commit);
 });
-['oSafe','oQrContact'].forEach(id=>$(id).addEventListener('change',()=>{
-  document.body.classList.toggle('print-safe',$('oSafe').checked);
-  paint(); savePrefs();
-}));
-['oBacks','oCut','oRoster','fSheet','fScale'].forEach(id=>$(id).addEventListener('change',savePrefs));
+['oSafe','oQrContact'].forEach(id=>$(id).addEventListener('change',()=>{ paint(); savePrefs(); }));
+['oBacks','oCut','oRoster','fScale','fVidSize','fVidLen','oVidFlip','oVidGlitch'].forEach(id=>$(id).addEventListener('change',savePrefs));
+['fSheet','oTrue'].forEach(id=>$(id).addEventListener('change',()=>{ sheetReadout(); savePrefs(); }));
+
 function savePrefs(){
-  STORE.set(STORE.K.prefs,{safe:$('oSafe').checked,qrContact:$('oQrContact').checked,
-    backs:$('oBacks').checked,cut:$('oCut').checked,sheet:$('fSheet').value,
-    scale:$('fScale').value,roster:$('oRoster').checked});
+  STORE.set(STORE.K.prefs,{
+    safe:$('oSafe').checked, qrContact:$('oQrContact').checked,
+    backs:$('oBacks').checked, cut:$('oCut').checked, roster:$('oRoster').checked,
+    sheet:$('fSheet').value, trueSize:$('oTrue').checked, scale:$('fScale').value,
+    vidSize:$('fVidSize').value, vidLen:$('fVidLen').value,
+    vidFlip:$('oVidFlip').checked, vidGlitch:$('oVidGlitch').checked
+  });
 }
 
 /* --- preview scaling ---------------------------------------------------- */
 function fitStages(){
   ['wrapA','wrapB'].forEach((w,i)=>{
     const wrap=$(w), stage=$(i===0?'stageA':'stageB');
-    const avail=wrap.parentElement.clientWidth||384;
-    const zoom=Math.max(0.6,Math.min(2,(avail-4)/384));
+    const avail=wrap.parentElement.clientWidth||CARD_W;
+    const zoom=Math.max(0.6,Math.min(2,(avail-4)/CARD_W));
     stage.style.setProperty('--zoom',zoom);
-    wrap.style.width=(384*zoom)+'px';
-    wrap.style.height=(240*zoom)+'px';
+    wrap.style.width=(CARD_W*zoom)+'px';
+    wrap.style.height=(CARD_H*zoom)+'px';
   });
 }
 window.addEventListener('resize',fitStages);
@@ -1457,7 +1727,7 @@ window.addEventListener('resize',fitStages);
   size(); addEventListener('resize',size);
   function tick(t){
     requestAnimationFrame(tick);
-    if($('oSafe')&&$('oSafe').checked) { ctx.clearRect(0,0,cv.width,cv.height); return; }
+    if($('oSafe')&&$('oSafe').checked){ ctx.clearRect(0,0,cv.width,cv.height); return; }
     if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     if(t-last<90) return; last=t;
     ctx.clearRect(0,0,cv.width,cv.height);
@@ -1473,8 +1743,7 @@ window.addEventListener('resize',fitStages);
   requestAnimationFrame(tick);
 })();
 setInterval(()=>{
-  const d=new Date();
-  const p=n=>String(n).padStart(2,'0');
+  const d=new Date(), p=n=>String(n).padStart(2,'0');
   $('clock').textContent=p(d.getUTCHours())+':'+p(d.getUTCMinutes())+':'+p(d.getUTCSeconds())+' UTC';
 },1000);
 
@@ -1486,19 +1755,24 @@ setInterval(()=>{
   state=Object.assign({},DEFAULTS,saved||{});
   if(!state.pid) state.pid=padId(STORE.nextNumber());
 
-  // restore preferences
-  $('oSafe').checked=!!prefs.safe; $('oQrContact').checked=!!prefs.qrContact;
-  $('oBacks').checked=prefs.backs!==false; $('oCut').checked=prefs.cut!==false;
+  $('oSafe').checked=!!prefs.safe;
+  $('oQrContact').checked=!!prefs.qrContact;
+  $('oBacks').checked=prefs.backs!==false;
+  $('oCut').checked=prefs.cut!==false;
   $('oRoster').checked=!!prefs.roster;
+  $('oTrue').checked=!!prefs.trueSize;
+  $('oVidFlip').checked=prefs.vidFlip!==false;
+  $('oVidGlitch').checked=prefs.vidGlitch!==false;
   if(prefs.sheet) $('fSheet').value=prefs.sheet;
   if(prefs.scale) $('fScale').value=prefs.scale;
-  document.body.classList.toggle('print-safe',$('oSafe').checked);
+  if(prefs.vidSize) $('fVidSize').value=prefs.vidSize;
+  if(prefs.vidLen) $('fVidLen').value=prefs.vidLen;
 
   stateToForm();
   refreshRoster();
   paint();
+  sheetReadout();
   fitStages();
-  // Fonts land after first paint; re-fit so nothing is clipped.
   if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fitStages);
   setTimeout(fitStages,400);
 })();
