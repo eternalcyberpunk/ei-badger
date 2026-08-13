@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EVIL IRIS // PERSONNEL IDENTIFICATION SYSTEM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<!-- ==========================================================================
+     CARD STYLESHEET  (id="cardCss")
+     Kept isolated from the application chrome because the PNG/SVG exporter
+     serialises this exact stylesheet into the exported <foreignObject>.
+     Anything the physical card needs must live in here.
+     ========================================================================== -->
+<style id="cardCss">
+:root{
+  --void:#05060a; --ink:#0b0c10; --graphite:#14161d; --slate:#1c1f29;
+  --violet:#a855f7; --violet-dp:#7c3aed; --cyan:#22d3ee; --magenta:#ff2d8f;
+  --bone:#e8ecf4; --ash:#8b93a7; --dim:#5a6070;
+  --accent:#a855f7; --accent2:#22d3ee;
+  --mono:"Space Mono","IBM Plex Mono",ui-monospace,"Courier New",monospace;
+  --disp:"Chakra Petch","Rajdhani","Arial Narrow",system-ui,sans-serif;
+}
+
+/* --- CARD SHELL --------------------------------------------------------
+   Card is authored at 384 x 240 CSS px = exactly 4.00in x 2.50in at 96dpi.
+   Screen preview scales it up with a transform on the parent stage, so the
+   printed geometry is always true to size.                                */
+.card{
+  position:relative; width:384px; height:240px; flex:none;
+  background:var(--ink); color:var(--bone);
+  font-family:var(--disp); overflow:hidden; isolation:isolate;
+  clip-path:polygon(0 10px,10px 0,calc(100% - 22px) 0,100% 22px,100% calc(100% - 10px),calc(100% - 10px) 100%,22px 100%,0 calc(100% - 22px));
+  -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  box-sizing:border-box;
+}
+.card *{box-sizing:border-box;}
+.card-front{display:flex; flex-direction:column;}
+
+/* substrate: graphite gradients + accent bloom + engineering grid */
+.c-bg{position:absolute; inset:0; z-index:0;
+  background:
+    radial-gradient(120% 90% at 12% 0%, color-mix(in srgb,var(--accent) 26%,transparent) 0%, transparent 52%),
+    radial-gradient(90% 80% at 100% 100%, color-mix(in srgb,var(--accent2) 20%,transparent) 0%, transparent 55%),
+    linear-gradient(158deg,#171a23 0%,#0b0c10 42%,#08090d 72%,#101219 100%);
+}
+.c-grid{position:absolute; inset:0; z-index:1; opacity:.5;
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,.045) 1px, transparent 1px);
+  background-size:12px 12px;
+  -webkit-mask-image:radial-gradient(120% 100% at 30% 0%, #000 20%, transparent 80%);
+  mask-image:radial-gradient(120% 100% at 30% 0%, #000 20%, transparent 80%);
+}
+/* holographic foil sweep */
+.c-holo{position:absolute; inset:-40%; z-index:2; opacity:.30; mix-blend-mode:screen; pointer-events:none;
+  background:linear-gradient(72deg,transparent 30%,rgba(34,211,238,.5) 42%,rgba(168,85,247,.55) 50%,rgba(255,45,143,.45) 58%,transparent 70%);
+  animation:holoSweep 9s linear infinite;}
+@keyframes holoSweep{0%{transform:translateX(-32%) rotate(0.001deg)}100%{transform:translateX(32%) rotate(0.001deg)}}
+/* CRT scanlines + travelling beam + film grain */
+.c-lines{position:absolute; inset:0; z-index:6; pointer-events:none; opacity:.34;
+  background:repeating-linear-gradient(to bottom, rgba(0,0,0,.55) 0 1px, transparent 1px 3px);}
+.c-beam{position:absolute; left:0; right:0; height:26px; z-index:7; pointer-events:none; opacity:.5;
+  background:linear-gradient(to bottom,transparent,color-mix(in srgb,var(--accent2) 55%,transparent),transparent);
+  animation:beam 5.5s linear infinite;}
+@keyframes beam{0%{top:-30px}100%{top:250px}}
+.c-grain{position:absolute; inset:0; z-index:8; pointer-events:none; opacity:.16; mix-blend-mode:overlay;
+  background-image:var(--noise); background-size:120px 120px;}
+/* bevelled hairline edge + corner ticks */
+.c-edge{position:absolute; inset:0; z-index:9; pointer-events:none;
+  clip-path:inherit;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 55%,transparent), inset 0 0 0 2.5px rgba(0,0,0,.65), inset 0 0 22px rgba(0,0,0,.85);}
+.c-edge::before,.c-edge::after{content:""; position:absolute; width:16px; height:16px;}
+.c-edge::before{left:4px; bottom:4px; border-left:1px solid var(--accent2); border-bottom:1px solid var(--accent2); opacity:.8;}
+.c-edge::after{right:4px; top:4px; border-right:1px solid var(--accent2); border-top:1px solid var(--accent2); opacity:.8;}
+
+/* --- HEADER ------------------------------------------------------------ */
+.c-head{position:relative; z-index:5; height:28px; flex:none; display:flex; align-items:center; gap:6px;
+  padding:0 8px 0 7px; border-bottom:1px solid color-mix(in srgb,var(--accent) 45%,transparent);
+  background:linear-gradient(90deg, color-mix(in srgb,var(--accent) 30%,transparent), rgba(8,9,13,.35) 45%, rgba(8,9,13,.1));}
+.c-sigil{width:19px; height:19px; flex:none;}
+.c-org{font-size:10px; font-weight:700; letter-spacing:.16em; line-height:1;
+  text-shadow:0 0 6px color-mix(in srgb,var(--accent) 70%,transparent), -0.5px 0 0 rgba(255,45,143,.55), 0.5px 0 0 rgba(34,211,238,.45);}
+.c-sys{font-family:var(--mono); font-size:4.4px; letter-spacing:.30em; color:var(--ash); margin-top:2px; line-height:1;}
+.c-headtxt{flex:1; min-width:0;}
+.c-clr{display:flex; flex-direction:column; align-items:flex-end; justify-content:center; height:20px;
+  padding:2px 6px; background:rgba(0,0,0,.55); border:1px solid color-mix(in srgb,var(--accent) 70%,transparent);
+  clip-path:polygon(6px 0,100% 0,100% 100%,0 100%,0 6px);}
+.c-clr-l{font-family:var(--mono); font-size:3.6px; letter-spacing:.28em; color:var(--ash); line-height:1;}
+.c-clr-v{font-size:9px; font-weight:700; letter-spacing:.08em; line-height:1.05; color:var(--bone);}
+.c-clr-v b{color:var(--accent); font-weight:700;}
+
+/* --- BODY -------------------------------------------------------------- */
+.c-body{position:relative; z-index:5; flex:1; display:grid; grid-template-columns:112px 1fr; gap:8px; padding:6px 8px 0 7px; min-height:0;}
+.c-left{display:flex; flex-direction:column; gap:4px; min-width:0;}
+
+/* portrait: facial-recognition framing */
+.c-por{position:relative; height:114px; background:#07080c; overflow:hidden;
+  border:1px solid rgba(255,255,255,.10);
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%);}
+.c-por img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block;
+  filter:contrast(1.08) saturate(.72) brightness(.95);}
+.c-por-empty{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center;
+  font-family:var(--mono); font-size:5px; letter-spacing:.22em; color:var(--dim); padding:0 6px;
+  background:repeating-linear-gradient(135deg,#0d0f15 0 6px,#0a0b10 6px 12px);}
+.c-por-tint{position:absolute; inset:0; background:linear-gradient(180deg,transparent 40%,rgba(5,6,10,.88) 100%), linear-gradient(0deg,color-mix(in srgb,var(--accent) 16%,transparent),transparent 60%);}
+.c-por-grid{position:absolute; inset:0; opacity:.32;
+  background-image:linear-gradient(to right,color-mix(in srgb,var(--accent2) 45%,transparent) 1px,transparent 1px),
+                   linear-gradient(to bottom,color-mix(in srgb,var(--accent2) 45%,transparent) 1px,transparent 1px);
+  background-size:14px 14px;}
+.c-por-beam{position:absolute; left:0; right:0; height:14px; opacity:.65;
+  background:linear-gradient(to bottom,transparent,color-mix(in srgb,var(--accent2) 75%,transparent),transparent);
+  animation:beamP 3.4s ease-in-out infinite alternate;}
+@keyframes beamP{0%{top:-6px}100%{top:104px}}
+.c-por svg.c-brk{position:absolute; inset:0; width:100%; height:100%;}
+.c-por-tag{position:absolute; left:0; bottom:0; right:9px; display:flex; justify-content:space-between; align-items:center;
+  padding:1.5px 3px; background:color-mix(in srgb,var(--accent) 72%,#000);
+  font-family:var(--mono); font-size:3.9px; letter-spacing:.16em; color:#fff;}
+.c-por-tag i{width:3px; height:3px; background:#7CFFB2; border-radius:50%; box-shadow:0 0 4px #7CFFB2; animation:blip 1.6s steps(1) infinite;}
+@keyframes blip{0%,60%{opacity:1}61%,100%{opacity:.25}}
+.c-por-id{position:absolute; top:3px; left:3px; font-family:var(--mono); font-size:3.6px; letter-spacing:.1em;
+  color:var(--bone); background:rgba(0,0,0,.6); padding:0 2px; opacity:.9;}
+
+/* biometric mini-panel under the portrait */
+.c-bio{flex:1; display:flex; flex-direction:column; justify-content:space-between; gap:2px;
+  padding:3px; background:rgba(0,0,0,.42); border:1px solid rgba(255,255,255,.07);}
+.c-bio-row{display:flex; align-items:center; gap:3px; font-family:var(--mono); font-size:3.6px; letter-spacing:.12em; color:var(--ash);}
+.c-bio-row span{width:26px; flex:none;}
+.c-meter{flex:1; height:2.5px; background:rgba(255,255,255,.10); position:relative; overflow:hidden;}
+.c-meter b{position:absolute; inset:0 auto 0 0; display:block; background:linear-gradient(90deg,var(--accent),var(--accent2)); box-shadow:0 0 5px color-mix(in srgb,var(--accent2) 70%,transparent);}
+.c-bio-row em{font-style:normal; color:var(--bone); width:15px; text-align:right;}
+.c-helix{height:11px; width:100%;}
+
+/* right column */
+.c-right{position:relative; display:flex; flex-direction:column; min-width:0;}
+.c-name{font-size:17px; font-weight:700; line-height:1; letter-spacing:.005em; color:#fff;
+  text-shadow:0 0 10px color-mix(in srgb,var(--accent) 55%,transparent); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.c-name.long{font-size:13px;}
+.c-name.xlong{font-size:11px;}
+.c-call{display:flex; align-items:center; gap:4px; margin-top:1px; font-family:var(--mono); font-size:6.5px;
+  letter-spacing:.24em; color:var(--accent2); white-space:nowrap; overflow:hidden;}
+.c-call::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,color-mix(in srgb,var(--accent2) 60%,transparent),transparent);}
+
+.c-fields{margin-top:4px; display:flex; flex-direction:column; gap:1.5px;}
+.c-fl{display:flex; align-items:baseline; gap:3px; font-family:var(--mono); font-size:5px; line-height:1.35; letter-spacing:.11em;}
+.c-fl u{text-decoration:none; color:var(--dim); width:46px; flex:none;}
+.c-fl s{text-decoration:none; color:color-mix(in srgb,var(--accent) 85%,#fff); flex:none;}
+.c-fl q{quotes:none; color:var(--bone); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+
+/* serial block: the loudest typographic moment on the card */
+.c-serial{margin-top:auto; position:relative; padding:3px 5px 3px 6px; background:linear-gradient(90deg,rgba(0,0,0,.72),rgba(0,0,0,.15));
+  border-left:2px solid var(--accent);}
+.c-serial-l{font-family:var(--mono); font-size:3.8px; letter-spacing:.30em; color:var(--ash);}
+.c-serial-v{font-size:25px; font-weight:700; line-height:.98; letter-spacing:.02em; color:#fff;
+  text-shadow:0 0 12px color-mix(in srgb,var(--accent) 85%,transparent), -0.7px 0 0 rgba(255,45,143,.6), 0.7px 0 0 rgba(34,211,238,.5);}
+.c-serial-m{font-family:var(--mono); font-size:4.6px; letter-spacing:.20em; color:var(--accent2); margin-top:1px;}
+.c-radar{position:absolute; right:2px; bottom:1px; width:42px; height:42px; opacity:.9;}
+.c-hexcol{position:absolute; right:0; top:0; font-family:var(--mono); font-size:3.4px; line-height:1.5; letter-spacing:.06em;
+  color:var(--dim); text-align:right; opacity:.75;}
+
+/* --- FOOTER ------------------------------------------------------------ */
+.c-foot{position:relative; z-index:5; flex:none; height:52px; display:grid; grid-template-columns:1fr 44px; gap:6px;
+  padding:4px 8px 5px 7px; border-top:1px solid rgba(255,255,255,.09);
+  background:linear-gradient(0deg,rgba(0,0,0,.6),transparent);}
+.c-footL{display:flex; flex-direction:column; justify-content:space-between; min-width:0;}
+.c-stat{display:flex; gap:6px; flex-wrap:nowrap;}
+.c-st{display:flex; align-items:center; gap:2.5px; font-family:var(--mono); font-size:4px; letter-spacing:.13em; color:var(--ash); white-space:nowrap;}
+.c-st i{width:3px; height:3px; background:var(--accent2); border-radius:50%; box-shadow:0 0 4px var(--accent2); animation:blip 2.2s steps(1) infinite;}
+.c-st.ok i{background:#7CFFB2; box-shadow:0 0 4px #7CFFB2; animation-delay:.4s;}
+.c-st.hot i{background:var(--magenta); box-shadow:0 0 4px var(--magenta); animation-delay:.9s;}
+.c-st b{color:var(--bone); font-weight:400;}
+.c-bars{height:17px; display:flex; align-items:stretch; gap:0; overflow:hidden;}
+.c-bars i{display:block; height:100%; background:var(--bone);}
+.c-bars i.sp{background:transparent;}
+.c-micro{display:flex; justify-content:space-between; gap:4px; font-family:var(--mono); font-size:3.6px; letter-spacing:.14em; color:var(--dim); white-space:nowrap; overflow:hidden;}
+.c-qr{width:44px; height:44px; align-self:end; padding:2px; background:#e8ecf4;
+  border:1px solid color-mix(in srgb,var(--accent) 60%,transparent);
+  clip-path:polygon(0 0,100% 0,100% 100%,5px 100%,0 calc(100% - 5px));}
+.c-qr svg{display:block; width:100%; height:100%;}
+
+/* class-specific decorative stripe (top-right hazard flash) */
+.c-flash{position:absolute; z-index:4; top:28px; right:0; width:54px; height:5px; opacity:.85;
+  background:repeating-linear-gradient(115deg,var(--accent) 0 4px,transparent 4px 8px);}
+.card[data-cls="security"] .c-flash{background:repeating-linear-gradient(115deg,var(--magenta) 0 5px,#000 5px 10px); height:6px;}
+.card[data-cls="recruit"] .c-flash{background:repeating-linear-gradient(115deg,var(--ash) 0 2px,transparent 2px 8px);}
+.card[data-cls="executive"] .c-flash{background:linear-gradient(90deg,transparent,var(--accent)); height:3px; width:80px;}
+.card[data-cls="field"] .c-flash{background:repeating-linear-gradient(90deg,var(--accent) 0 8px,transparent 8px 12px);}
+
+/* --- CARD BACK --------------------------------------------------------- */
+.card-back{display:flex; flex-direction:column;}
+.b-head{position:relative; z-index:5; height:19px; flex:none; display:flex; align-items:center; gap:5px; padding:0 8px 0 7px;
+  border-bottom:1px solid rgba(255,255,255,.10); background:linear-gradient(90deg,rgba(0,0,0,.55),transparent);}
+.b-head .c-sigil{width:12px; height:12px;}
+.b-title{font-size:7px; font-weight:700; letter-spacing:.20em;}
+.b-id{margin-left:auto; font-family:var(--mono); font-size:5px; letter-spacing:.16em; color:var(--accent2);}
+.b-stripe{position:relative; z-index:5; flex:none; height:22px; margin:5px 0; background:linear-gradient(180deg,#05060a,#0f1118 40%,#05060a);
+  border-top:1px solid rgba(255,255,255,.08); border-bottom:1px solid rgba(255,255,255,.08);
+  display:flex; align-items:center; overflow:hidden; padding:0 7px;}
+.b-stripe span{font-family:var(--mono); font-size:4.2px; letter-spacing:.30em; color:color-mix(in srgb,var(--accent) 70%,var(--dim)); white-space:nowrap; opacity:.85;}
+.b-body{position:relative; z-index:5; flex:1; display:grid; grid-template-columns:1fr 88px; gap:7px; padding:0 8px 0 7px; min-height:0;}
+.b-sec{margin-bottom:4px;}
+.b-lab{display:flex; align-items:center; gap:3px; font-family:var(--mono); font-size:4px; letter-spacing:.28em; color:var(--accent2); margin-bottom:1.5px;}
+.b-lab::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,rgba(255,255,255,.18),transparent);}
+.b-txt{font-family:var(--mono); font-size:4.6px; line-height:1.55; color:var(--bone); opacity:.88;}
+.b-chips{display:flex; flex-wrap:wrap; gap:2px;}
+.b-chip{font-family:var(--mono); font-size:3.9px; letter-spacing:.10em; padding:1px 3px; color:var(--bone);
+  background:rgba(255,255,255,.05); border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);}
+.b-quote{font-family:var(--disp); font-size:6.4px; font-style:italic; line-height:1.35; color:#fff; opacity:.92;
+  border-left:2px solid var(--accent); padding-left:4px;}
+.b-kv{display:flex; gap:3px; font-family:var(--mono); font-size:4.3px; line-height:1.5; letter-spacing:.08em;}
+.b-kv u{text-decoration:none; color:var(--dim); width:34px; flex:none;}
+.b-kv q{quotes:none; color:var(--bone); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.b-right{display:flex; flex-direction:column; align-items:stretch; gap:4px;}
+.b-qr{width:78px; height:78px; align-self:center; padding:3px; background:#e8ecf4;
+  border:1px solid color-mix(in srgb,var(--accent) 60%,transparent);}
+.b-qr svg{display:block; width:100%; height:100%;}
+.b-watermark{position:absolute; z-index:3; right:-14px; bottom:16px; width:120px; height:120px; opacity:.10; pointer-events:none;}
+.b-foot{position:relative; z-index:5; flex:none; padding:3px 8px 5px 7px; border-top:1px solid rgba(255,255,255,.09);
+  background:linear-gradient(0deg,rgba(0,0,0,.6),transparent);}
+.b-warn{font-family:var(--mono); font-size:3.8px; letter-spacing:.10em; line-height:1.45; color:var(--dim);}
+.b-warn b{color:color-mix(in srgb,var(--magenta) 80%,#fff); font-weight:400; letter-spacing:.18em;}
+
+/* --- PRINT-SAFE: kill every animation, keep every colour --------------- */
+.card.print-safe .c-holo,.card.print-safe .c-beam,.card.print-safe .c-por-beam{animation:none !important;}
+.card.print-safe .c-por-beam{opacity:0;}
+.card.print-safe .c-beam{opacity:0;}
+.card.print-safe .c-st i,.card.print-safe .c-por-tag i{animation:none !important; opacity:1 !important;}
+.card.print-safe .c-lines{opacity:.20;}
+@media (prefers-reduced-motion:reduce){
+  .c-holo,.c-beam,.c-por-beam,.c-st i,.c-por-tag i{animation:none !important;}
+}
+</style>
+
+<!-- ==========================================================================
+     APPLICATION CHROME STYLESHEET
+     ========================================================================== -->
+<style id="appCss">
+*{box-sizing:border-box;}
+html,body{margin:0; padding:0;}
+body{
+  background:var(--void); color:var(--bone); font-family:var(--disp);
+  min-height:100vh; overflow-x:hidden;
+  background-image:radial-gradient(90% 60% at 50% -10%, rgba(124,58,237,.20), transparent 60%);
+}
+#rain{position:fixed; inset:0; z-index:0; opacity:.32; pointer-events:none;}
+.veil{position:fixed; inset:0; z-index:1; pointer-events:none;
+  background:repeating-linear-gradient(to bottom, rgba(0,0,0,.30) 0 1px, transparent 1px 3px); opacity:.5;}
+.shell{position:relative; z-index:2;}
+
+/* top navigation */
+.nav{position:sticky; top:0; z-index:30; display:flex; align-items:center; gap:12px; padding:9px 16px;
+  background:rgba(6,7,11,.92); backdrop-filter:blur(8px);
+  border-bottom:1px solid rgba(168,85,247,.35); box-shadow:0 12px 40px -22px rgba(168,85,247,.9);}
+.nav-sigil{width:30px; height:30px; flex:none;}
+.nav-t{font-size:14px; font-weight:700; letter-spacing:.18em; line-height:1;}
+.nav-t em{font-style:normal; color:var(--violet);}
+.nav-s{font-family:var(--mono); font-size:8px; letter-spacing:.32em; color:var(--dim); margin-top:3px;}
+.nav-sp{flex:1;}
+.leds{display:flex; gap:12px;}
+.led{display:flex; align-items:center; gap:5px; font-family:var(--mono); font-size:9px; letter-spacing:.16em; color:var(--ash);}
+.led i{width:6px; height:6px; border-radius:50%; background:#7CFFB2; box-shadow:0 0 8px #7CFFB2; animation:pulseLed 2.4s steps(1) infinite;}
+.led.v i{background:var(--violet); box-shadow:0 0 8px var(--violet); animation-delay:.5s;}
+.led.c i{background:var(--cyan); box-shadow:0 0 8px var(--cyan); animation-delay:1s;}
+.led b{color:var(--bone); font-weight:400;}
+@keyframes pulseLed{0%,70%{opacity:1}71%,100%{opacity:.3}}
+.clock{font-family:var(--mono); font-size:9px; letter-spacing:.12em; color:var(--cyan);}
+
+/* two-pane layout */
+.main{display:grid; grid-template-columns:390px 1fr; gap:16px; padding:16px; align-items:start; max-width:1580px; margin:0 auto;}
+.panel{background:linear-gradient(180deg,rgba(20,22,29,.94),rgba(8,9,13,.94));
+  border:1px solid rgba(255,255,255,.09); position:relative;
+  clip-path:polygon(0 12px,12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%);}
+.panel-h{display:flex; align-items:center; gap:8px; padding:9px 12px; border-bottom:1px solid rgba(168,85,247,.28);
+  background:linear-gradient(90deg,rgba(168,85,247,.20),transparent);}
+.panel-h h2{margin:0; font-size:11px; font-weight:700; letter-spacing:.22em;}
+.panel-h .tag{margin-left:auto; font-family:var(--mono); font-size:8px; letter-spacing:.18em; color:var(--dim);}
+.editor{max-height:calc(100vh - 116px); overflow-y:auto; padding:12px;}
+.editor::-webkit-scrollbar{width:9px;}
+.editor::-webkit-scrollbar-track{background:#0b0c10;}
+.editor::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--violet),var(--cyan));}
+
+/* form primitives */
+.grp{margin-bottom:16px;}
+.grp-h{display:flex; align-items:center; gap:6px; margin-bottom:8px; font-family:var(--mono); font-size:8.5px; letter-spacing:.3em; color:var(--cyan);}
+.grp-h::before{content:""; width:5px; height:5px; background:var(--cyan); transform:rotate(45deg);}
+.grp-h::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,rgba(34,211,238,.4),transparent);}
+.row{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+.f{display:block; margin-bottom:8px;}
+.f>span{display:block; font-family:var(--mono); font-size:8px; letter-spacing:.2em; color:var(--ash); margin-bottom:3px;}
+.f input[type=text],.f input[type=email],.f input[type=date],.f select,.f textarea{
+  width:100%; background:#07080c; color:var(--bone); border:1px solid rgba(255,255,255,.13);
+  padding:7px 8px; font-family:var(--mono); font-size:11px; letter-spacing:.04em; outline:none;
+  transition:border-color .15s, box-shadow .15s;}
+.f textarea{resize:vertical; min-height:56px; line-height:1.5;}
+.f input:focus,.f select:focus,.f textarea:focus{border-color:var(--violet); box-shadow:0 0 0 1px rgba(168,85,247,.45), 0 0 18px -4px rgba(168,85,247,.8);}
+.f input[type=range]{width:100%; accent-color:var(--violet); background:transparent;}
+.f select option{background:#07080c;}
+.hint{font-family:var(--mono); font-size:7.5px; letter-spacing:.1em; color:var(--dim); margin-top:3px;}
+
+/* buttons */
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;
+  padding:8px 12px; font-family:var(--disp); font-size:10px; font-weight:600; letter-spacing:.18em;
+  color:var(--bone); background:linear-gradient(180deg,#191c25,#0c0e14); border:1px solid rgba(255,255,255,.16);
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+  transition:.15s; text-transform:uppercase; width:100%;}
+.btn:hover{border-color:var(--violet); color:#fff; box-shadow:0 0 20px -6px rgba(168,85,247,.95); transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+.btn:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
+.btn.pri{background:linear-gradient(180deg,var(--violet-dp),#4c1d95); border-color:var(--violet);}
+.btn.pri:hover{background:linear-gradient(180deg,var(--violet),#5b21b6);}
+.btn.cy{border-color:rgba(34,211,238,.5);}
+.btn.cy:hover{border-color:var(--cyan); box-shadow:0 0 20px -6px rgba(34,211,238,.95);}
+.btn.mg:hover{border-color:var(--magenta); box-shadow:0 0 20px -6px rgba(255,45,143,.95);}
+.btns{display:grid; gap:6px;}
+.btns.c2{grid-template-columns:1fr 1fr;}
+.btns.c3{grid-template-columns:1fr 1fr 1fr;}
+
+/* toggles */
+.tog{display:flex; align-items:center; gap:8px; cursor:pointer; padding:6px 8px; margin-bottom:6px;
+  background:#07080c; border:1px solid rgba(255,255,255,.10); font-family:var(--mono); font-size:9px; letter-spacing:.14em; color:var(--ash);}
+.tog input{appearance:none; width:26px; height:13px; background:#22252f; position:relative; cursor:pointer; flex:none; transition:.15s;}
+.tog input::after{content:""; position:absolute; top:2px; left:2px; width:9px; height:9px; background:var(--dim); transition:.15s;}
+.tog input:checked{background:rgba(168,85,247,.35);}
+.tog input:checked::after{left:15px; background:var(--violet); box-shadow:0 0 8px var(--violet);}
+.tog:hover{border-color:rgba(168,85,247,.5); color:var(--bone);}
+
+/* preview side */
+.preview{position:sticky; top:64px;}
+.pv-body{padding:18px; display:flex; flex-direction:column; align-items:center; gap:14px;
+  background-image:radial-gradient(circle at 1px 1px, rgba(255,255,255,.07) 1px, transparent 0); background-size:18px 18px;
+  max-height:calc(100vh - 116px); overflow:auto;}
+.stagewrap{position:relative;}
+.stage{transform-origin:top left; transform:scale(var(--zoom,2));}
+.stage-slot{position:relative; filter:drop-shadow(0 24px 40px rgba(0,0,0,.75)) drop-shadow(0 0 30px rgba(168,85,247,.20));}
+.face-lab{font-family:var(--mono); font-size:8px; letter-spacing:.3em; color:var(--dim); margin-bottom:6px;}
+.toolbar{display:flex; flex-wrap:wrap; gap:6px; padding:10px 12px; border-top:1px solid rgba(255,255,255,.09); background:rgba(6,7,11,.7);}
+.toolbar .btn{width:auto; flex:1 1 120px;}
+.toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); z-index:80;
+  padding:10px 18px; background:rgba(8,9,13,.96); border:1px solid var(--violet); color:var(--bone);
+  font-family:var(--mono); font-size:10px; letter-spacing:.18em; opacity:0; pointer-events:none; transition:.25s;
+  box-shadow:0 0 30px -6px rgba(168,85,247,.9);}
+.toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
+
+/* card entry animation on GENERATE */
+@keyframes cardIn{
+  0%{opacity:0; transform:translateX(-4px) skewX(6deg); filter:brightness(2.4) saturate(0);}
+  22%{opacity:1; transform:translateX(5px) skewX(-4deg);}
+  45%{transform:translateX(-2px) skewX(1deg); filter:brightness(1.2);}
+  100%{opacity:1; transform:none; filter:none;}
+}
+.card.gen{animation:cardIn .5s ease-out;}
+
+/* page footer */
+.foot{position:relative; z-index:2; padding:22px 16px 34px; text-align:center; border-top:1px solid rgba(255,255,255,.07); margin-top:6px;}
+.foot-1{font-size:10px; font-weight:600; letter-spacing:.30em; color:var(--ash);}
+.foot-1 em{font-style:normal; color:var(--violet);}
+.foot-2{font-family:var(--mono); font-size:9px; letter-spacing:.26em; color:var(--dim); margin-top:6px;}
+
+/* PRINT STAGE — hidden on screen, the only thing visible on paper */
+#printStage{display:none;}
+.sheet{display:flex; flex-direction:column; align-items:center; gap:10px;}
+.slot{position:relative;}
+.slot.cut{outline:1px dashed rgba(120,120,130,.85); outline-offset:5px;}
+.slot .crop{position:absolute; width:9px; height:9px; border:0 solid #555;}
+.slot .crop.tl{top:-9px; left:-9px; border-left-width:1px; border-top-width:1px;}
+.slot .crop.tr{top:-9px; right:-9px; border-right-width:1px; border-top-width:1px;}
+.slot .crop.bl{bottom:-9px; left:-9px; border-left-width:1px; border-bottom-width:1px;}
+.slot .crop.br{bottom:-9px; right:-9px; border-right-width:1px; border-bottom-width:1px;}
+
+@media print{
+  @page{size:letter portrait; margin:0.25in;}
+  html,body{background:#fff !important; background-image:none !important;}
+  body>*{display:none !important;}
+  #printStage{display:block !important;}
+  #rain,.veil{display:none !important;}
+  .sheet{page-break-after:always; break-after:page;}
+  .sheet:last-child{page-break-after:auto; break-after:auto;}
+  .slot,.card{page-break-inside:avoid; break-inside:avoid;}
+  .card{box-shadow:none !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  .card .c-holo,.card .c-beam,.card .c-por-beam{animation:none !important;}
+}
+
+/* responsive: stack the editor above the preview */
+@media (max-width:1040px){
+  .main{grid-template-columns:1fr; padding:12px;}
+  .editor{max-height:none;}
+  .preview{position:static;}
+  .pv-body{max-height:none; padding:12px;}
+  .nav{flex-wrap:wrap; gap:8px 12px;}
+  .leds{order:3; width:100%; justify-content:space-between;}
+  .clock{order:2;}
+}
+@media (max-width:520px){
+  .row{grid-template-columns:1fr;}
+  .btns.c3{grid-template-columns:1fr 1fr;}
+  .nav-t{font-size:12px;}
+}
+</style>
+</head>
+<body>
+
+<canvas id="rain"></canvas>
+<div class="veil"></div>
+
+<div class="shell">
+
+  <!-- ================= TOP NAV ================= -->
+  <header class="nav">
+    <div class="nav-sigil" id="navSigil"></div>
+    <div>
+      <div class="nav-t">EVIL IRIS <em>//</em> PERSONNEL SYSTEM</div>
+      <div class="nav-s">IDENTIFICATION &amp; CREDENTIAL MANUFACTURE // v2.4</div>
+    </div>
+    <div class="nav-sp"></div>
+    <div class="clock" id="clock">--:--:-- UTC</div>
+    <div class="leds">
+      <div class="led"><i></i>NETWORK: <b>ONLINE</b></div>
+      <div class="led c"><i></i>DATABASE: <b>ONLINE</b></div>
+      <div class="led v"><i></i>IRIS: <b>ACTIVE</b></div>
+    </div>
+  </header>
+
+  <div class="main">
+
+    <!-- ================= EDITOR ================= -->
+    <section class="panel">
+      <div class="panel-h"><h2>PERSONNEL DATA</h2><span class="tag" id="recTag">RECORD // NEW</span></div>
+      <div class="editor">
+
+        <div class="grp">
+          <div class="grp-h">PORTRAIT</div>
+          <label class="f"><span>SUBJECT PHOTOGRAPH — JPG / PNG / WEBP</span>
+            <input type="file" id="fPhoto" accept="image/jpeg,image/png,image/webp" style="font-family:var(--mono);font-size:10px;color:var(--ash)">
+          </label>
+          <div class="row">
+            <label class="f"><span>ZOOM <b id="vZoom">100%</b></span><input type="range" id="fZoom" min="100" max="300" value="100"></label>
+            <label class="f"><span>POSITION X <b id="vPx">50%</b></span><input type="range" id="fPx" min="0" max="100" value="50"></label>
+          </div>
+          <div class="row">
+            <label class="f"><span>POSITION Y <b id="vPy">50%</b></span><input type="range" id="fPy" min="0" max="100" value="50"></label>
+            <div class="f"><span>&nbsp;</span><button class="btn" id="btnCrop">RESET CROP</button></div>
+          </div>
+        </div>
+
+        <div class="grp">
+          <div class="grp-h">IDENTITY</div>
+          <label class="f"><span>FULL NAME</span><input type="text" id="fName" placeholder="MARVELLE RICHARDSON"></label>
+          <label class="f"><span>CALLSIGN</span><input type="text" id="fCall" placeholder="THE ARCHITECT"></label>
+          <div class="row">
+            <label class="f"><span>PERSONNEL NUMBER</span><input type="text" id="fPid" placeholder="EI-0001"></label>
+            <label class="f"><span>CARD CLASS</span>
+              <select id="fCls">
+                <option value="standard">Standard Personnel</option>
+                <option value="executive">Executive</option>
+                <option value="engineer">Engineer</option>
+                <option value="researcher">Researcher</option>
+                <option value="field">Field Operative</option>
+                <option value="recruit">Recruit</option>
+                <option value="developer">Developer</option>
+                <option value="security">Security</option>
+                <option value="rnd">R&amp;D</option>
+                <option value="architect">Architect</option>
+              </select>
+            </label>
+          </div>
+          <button class="btn cy" id="btnGenNum">GENERATE PERSONNEL NUMBER</button>
+          <div class="hint">Sequence is held in local storage — refreshing never rewinds it. Type over the field to override.</div>
+        </div>
+
+        <div class="grp">
+          <div class="grp-h">ASSIGNMENT</div>
+          <label class="f"><span>ROLE</span><input type="text" id="fRole" placeholder="SYSTEM ARCHITECT"></label>
+          <div class="row">
+            <label class="f"><span>DIVISION</span><input type="text" id="fDiv" placeholder="R&amp;D"></label>
+            <label class="f"><span>DEPARTMENT</span><input type="text" id="fDept" placeholder="ADVANCED SYSTEMS"></label>
+          </div>
+          <label class="f"><span>SPECIALTY</span><input type="text" id="fSpec" placeholder="ADVANCED TECHNOLOGY"></label>
+          <div class="row">
+            <label class="f"><span>CLEARANCE</span>
+              <select id="fClr">
+                <option value="1">LEVEL 01 // RECRUIT</option>
+                <option value="2">LEVEL 02 // OPERATIVE</option>
+                <option value="3">LEVEL 03 // TECHNICIAN</option>
+                <option value="4">LEVEL 04 // SPECIALIST</option>
+                <option value="5">LEVEL 05 // COMMAND</option>
+                <option value="6">LEVEL 06 // EXECUTIVE</option>
+                <option value="7" selected>LEVEL 07 // BLACK</option>
+                <option value="8">LEVEL 08 // IRIS</option>
+              </select>
+            </label>
+            <label class="f"><span>STATUS</span>
+              <select id="fStat">
+                <option>ACTIVE</option><option>DEPLOYED</option><option>ON CALL</option>
+                <option>PROBATION</option><option>RESTRICTED</option><option>DARK</option>
+                <option>ARCHIVED</option><option>SUSPENDED</option>
+              </select>
+            </label>
+          </div>
+          <div class="row">
+            <label class="f"><span>JOIN DATE</span><input type="date" id="fJoin"></label>
+            <label class="f"><span>BASE / LOCATION</span><input type="text" id="fBase" placeholder="LOS ANGELES // NODE-01"></label>
+          </div>
+          <label class="f"><span>EMAIL</span><input type="email" id="fMail" placeholder="architect@eternalcyberpunk.com"></label>
+        </div>
+
+        <div class="grp">
+          <div class="grp-h">DOSSIER — PRINTS ON CARD REVERSE</div>
+          <label class="f"><span>SHORT BIO</span><textarea id="fBio" placeholder="Two or three lines. Keep it tight — the reverse is 4in wide."></textarea></label>
+          <label class="f"><span>SKILLS — COMMA SEPARATED</span><input type="text" id="fSkills" placeholder="C++, METAL, OPENGL, SDF SCULPTING"></label>
+          <label class="f"><span>QUOTE (OPTIONAL)</span><input type="text" id="fQuote" placeholder="The eye does not blink."></label>
+          <label class="f"><span>SECONDARY INFORMATION (OPTIONAL)</span><input type="text" id="fSec" placeholder="EMERGENCY CONTACT // NODE-01 OPS"></label>
+          <label class="f"><span>CUSTOM TEXT (OPTIONAL)</span><input type="text" id="fCustom" placeholder="ISSUED UNDER DIRECTIVE 7-A"></label>
+        </div>
+
+        <div class="grp">
+          <div class="grp-h">RECORDS</div>
+          <label class="f"><span>SAVED PERSONNEL</span>
+            <select id="fRoster"><option value="">— ROSTER EMPTY —</option></select>
+          </label>
+          <div class="btns c3" style="margin-bottom:6px">
+            <button class="btn cy" id="btnSave">SAVE</button>
+            <button class="btn" id="btnLoad">LOAD</button>
+            <button class="btn mg" id="btnDel">DELETE</button>
+          </div>
+          <div class="btns c3">
+            <button class="btn" id="btnNew">NEW</button>
+            <button class="btn" id="btnExport">EXPORT</button>
+            <button class="btn" id="btnImport">IMPORT</button>
+          </div>
+          <input type="file" id="fImport" accept="application/json,.json" hidden>
+        </div>
+
+        <div class="grp">
+          <div class="grp-h">OUTPUT</div>
+          <label class="tog"><input type="checkbox" id="oSafe"> PRINT SAFE — DISABLE ANIMATION</label>
+          <label class="tog"><input type="checkbox" id="oQrContact"> INCLUDE EMAIL &amp; BASE IN QR PAYLOAD</label>
+          <label class="tog"><input type="checkbox" id="oBacks" checked> PRINT CARD REVERSE ON SECOND PAGE</label>
+          <label class="tog"><input type="checkbox" id="oCut" checked> SHOW CUT LINES ON PRINT SHEET</label>
+          <label class="f"><span>PRINT SHEET LAYOUT</span>
+            <select id="fSheet">
+              <option value="1">1 CARD PER PAGE — CENTRED</option>
+              <option value="2" selected>2 CARDS PER PAGE</option>
+              <option value="4">4 CARDS PER PAGE</option>
+            </select>
+          </label>
+          <label class="tog"><input type="checkbox" id="oRoster"> FILL SHEET FROM SAVED ROSTER</label>
+          <label class="f"><span>PNG EXPORT SCALE</span>
+            <select id="fScale">
+              <option value="2">2× — 768 × 480</option>
+              <option value="4" selected>4× — 1536 × 960 (384 dpi)</option>
+              <option value="6">6× — 2304 × 1440 (576 dpi)</option>
+              <option value="8">8× — 3072 × 1920 (768 dpi)</option>
+            </select>
+          </label>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================= PREVIEW ================= -->
+    <section class="panel preview">
+      <div class="panel-h"><h2>LIVE CREDENTIAL</h2><span class="tag" id="pvTag">4.00 × 2.50 IN // CR-100</span></div>
+
+      <div class="pv-body">
+        <div>
+          <div class="face-lab">FACE A // OBVERSE</div>
+          <div class="stagewrap" id="wrapA"><div class="stage" id="stageA">
+
+            <!-- ============ CARD FRONT ============ -->
+            <div class="stage-slot"><div class="card card-front" id="cardFront" data-cls="architect">
+              <div class="c-bg"></div><div class="c-grid"></div><div class="c-holo"></div>
+              <div class="c-flash"></div>
+
+              <header class="c-head">
+                <div class="c-sigil" data-sigil></div>
+                <div class="c-headtxt">
+                  <div class="c-org">EVIL IRIS INC.</div>
+                  <div class="c-sys">PERSONNEL IDENTIFICATION SYSTEM</div>
+                </div>
+                <div class="c-clr">
+                  <span class="c-clr-l">CLEARANCE</span>
+                  <span class="c-clr-v" data-f="clr">LEVEL 07 <b data-f="clrName">BLACK</b></span>
+                </div>
+              </header>
+
+              <div class="c-body">
+                <div class="c-left">
+                  <div class="c-por">
+                    <img data-f="photo" alt="" hidden>
+                    <div class="c-por-empty" data-f="photoEmpty">NO IMAGE ON FILE<br>UPLOAD SUBJECT PHOTOGRAPH</div>
+                    <div class="c-por-tint"></div>
+                    <div class="c-por-grid"></div>
+                    <div class="c-por-beam"></div>
+                    <svg class="c-brk" viewBox="0 0 112 114" preserveAspectRatio="none" aria-hidden="true">
+                      <g fill="none" stroke="var(--accent2)" stroke-width="1.2" opacity=".95">
+                        <path d="M5 22V5h17"/><path d="M107 22V5H90"/><path d="M5 92v17h17"/><path d="M107 92v17H90"/>
+                      </g>
+                      <g stroke="var(--accent)" stroke-width=".7" opacity=".7">
+                        <path d="M56 5v8M56 109v-8M5 57h8M107 57h-8"/>
+                      </g>
+                      <g fill="none" stroke="var(--accent2)" stroke-width=".6" opacity=".55">
+                        <rect x="34" y="26" width="44" height="52" rx="4"/>
+                        <path d="M34 46h44M56 26v52"/>
+                      </g>
+                      <circle cx="45" cy="46" r="2.6" fill="none" stroke="var(--magenta)" stroke-width=".7"/>
+                      <circle cx="67" cy="46" r="2.6" fill="none" stroke="var(--magenta)" stroke-width=".7"/>
+                    </svg>
+                    <div class="c-por-id" data-f="subj">SUBJ 0x0000</div>
+                    <div class="c-por-tag"><span>IDENTITY VERIFIED</span><i></i></div>
+                  </div>
+
+                  <div class="c-bio">
+                    <div class="c-bio-row"><span>RETINA</span><i class="c-meter"><b data-f="m1"></b></i><em data-f="m1v">98</em></div>
+                    <div class="c-bio-row"><span>DERMAL</span><i class="c-meter"><b data-f="m2"></b></i><em data-f="m2v">94</em></div>
+                    <div class="c-bio-row"><span>GAIT</span><i class="c-meter"><b data-f="m3"></b></i><em data-f="m3v">91</em></div>
+                    <svg class="c-helix" viewBox="0 0 104 12" preserveAspectRatio="none" aria-hidden="true">
+                      <g stroke="var(--accent)" stroke-width=".7" fill="none" opacity=".9">
+                        <path d="M0 6q6.5-6 13 0t13 0 13 0 13 0 13 0 13 0 13 0 13 0"/>
+                        <path d="M0 6q6.5 6 13 0t13 0 13 0 13 0 13 0 13 0 13 0 13 0" stroke="var(--accent2)"/>
+                      </g>
+                      <g stroke="var(--bone)" stroke-width=".5" opacity=".45">
+                        <path d="M6.5 3v6M19.5 3v6M32.5 3v6M45.5 3v6M58.5 3v6M71.5 3v6M84.5 3v6M97.5 3v6"/>
+                      </g>
+                    </svg>
+                  </div>
+                </div>
+
+                <div class="c-right">
+                  <div class="c-hexcol" data-f="hexcol"></div>
+                  <div class="c-name" data-f="name">MARVELLE RICHARDSON</div>
+                  <div class="c-call" data-f="call">THE ARCHITECT</div>
+
+                  <div class="c-fields">
+                    <div class="c-fl"><u data-f="lRole">ROLE</u><s>//</s><q data-f="role">SYSTEM ARCHITECT</q></div>
+                    <div class="c-fl"><u data-f="lUnit">DIVISION</u><s>//</s><q data-f="div">R&amp;D</q></div>
+                    <div class="c-fl"><u>DEPARTMENT</u><s>//</s><q data-f="dept">ADVANCED SYSTEMS</q></div>
+                    <div class="c-fl"><u>SPECIALTY</u><s>//</s><q data-f="spec">ADVANCED TECHNOLOGY</q></div>
+                    <div class="c-fl"><u>CLEARANCE</u><s>//</s><q data-f="clr2">LEVEL 07</q></div>
+                    <div class="c-fl"><u>STATUS</u><s>//</s><q data-f="stat">ACTIVE</q></div>
+                  </div>
+
+                  <div class="c-serial">
+                    <div class="c-serial-l">IDENTIFICATION NUMBER</div>
+                    <div class="c-serial-v" data-f="pid">EI-0001</div>
+                    <div class="c-serial-m" data-f="pidm">EI//0001//IRIS</div>
+                    <svg class="c-radar" viewBox="0 0 42 42" aria-hidden="true">
+                      <g fill="none" stroke="var(--accent)" opacity=".55">
+                        <circle cx="21" cy="21" r="19" stroke-width=".6"/>
+                        <circle cx="21" cy="21" r="13" stroke-width=".5"/>
+                        <circle cx="21" cy="21" r="7" stroke-width=".5"/>
+                        <path d="M21 2v38M2 21h38" stroke-width=".4"/>
+                      </g>
+                      <g stroke="var(--accent2)" stroke-width=".9" opacity=".9" fill="none">
+                        <path d="M21 21 L36 14" />
+                        <circle cx="36" cy="14" r="1.4" fill="var(--accent2)" stroke="none"/>
+                      </g>
+                      <g fill="var(--magenta)" opacity=".85">
+                        <circle cx="14" cy="28" r="1"/><circle cx="27" cy="30" r="0.8"/><circle cx="12" cy="16" r="0.8"/>
+                      </g>
+                      <g stroke="var(--bone)" stroke-width=".5" opacity=".35" data-f="ticks"></g>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <footer class="c-foot">
+                <div class="c-footL">
+                  <div class="c-stat">
+                    <div class="c-st"><i></i>IRIS NETWORK // <b>ONLINE</b></div>
+                    <div class="c-st ok"><i></i>AUTHORIZATION // <b>VERIFIED</b></div>
+                    <div class="c-st hot"><i></i>BIOMETRIC // <b>MATCH</b></div>
+                  </div>
+                  <div class="c-bars" data-f="barcode"></div>
+                  <div class="c-micro">
+                    <span data-f="coords">34.0522N 118.2437W</span>
+                    <span data-f="issue">ISSUED 2019.04.07</span>
+                    <span data-f="hash">SHA 0000-0000</span>
+                  </div>
+                </div>
+                <div class="c-qr" data-f="qrFront"></div>
+              </footer>
+
+              <div class="c-lines"></div><div class="c-beam"></div><div class="c-grain"></div><div class="c-edge"></div>
+            </div></div>
+          </div></div>
+        </div>
+
+        <div>
+          <div class="face-lab">FACE B // REVERSE</div>
+          <div class="stagewrap" id="wrapB"><div class="stage" id="stageB">
+
+            <!-- ============ CARD BACK ============ -->
+            <div class="stage-slot"><div class="card card-back" id="cardBack" data-cls="architect">
+              <div class="c-bg"></div><div class="c-grid"></div><div class="c-holo"></div>
+              <div class="b-watermark" data-sigil></div>
+
+              <header class="b-head">
+                <div class="c-sigil" data-sigil></div>
+                <div class="b-title" data-f="credLabel">ARCHITECT CREDENTIAL</div>
+                <div class="b-id" data-f="pid">EI-0001</div>
+              </header>
+
+              <div class="b-stripe"><span data-f="stripe"></span></div>
+
+              <div class="b-body">
+                <div>
+                  <div class="b-sec"><div class="b-lab">BIOGRAPHY</div><div class="b-txt" data-f="bio">—</div></div>
+                  <div class="b-sec"><div class="b-lab">CERTIFIED CAPABILITIES</div><div class="b-chips" data-f="skills"></div></div>
+                  <div class="b-sec" data-f="quoteWrap"><div class="b-lab">ON RECORD</div><div class="b-quote" data-f="quote">—</div></div>
+                  <div class="b-sec">
+                    <div class="b-lab">CONTACT</div>
+                    <div class="b-kv"><u>NET</u><q data-f="mail">—</q></div>
+                    <div class="b-kv"><u>BASE</u><q data-f="base">—</q></div>
+                    <div class="b-kv"><u>JOINED</u><q data-f="join">—</q></div>
+                    <div class="b-kv" data-f="secWrap"><u>NOTE</u><q data-f="sec">—</q></div>
+                  </div>
+                </div>
+                <div class="b-right">
+                  <div class="b-qr" data-f="qrBack"></div>
+                  <div class="b-lab" style="justify-content:center">SCAN TO VERIFY</div>
+                  <div class="b-txt" style="font-size:4px;line-height:1.5;text-align:center;opacity:.6" data-f="custom">—</div>
+                </div>
+              </div>
+
+              <footer class="b-foot">
+                <div class="b-warn">
+                  <b>PROPERTY OF EVIL IRIS INC. — NOT TRANSFERABLE.</b><br>
+                  This credential remains the property of Evil Iris Inc. and must be surrendered on request. Unauthorised duplication, alteration or possession is prosecuted under corporate directive. Decorative verification elements only — this card performs no live biometric authentication.
+                </div>
+                <div class="c-micro" style="margin-top:2px"><span data-f="pidm">EI//0001//IRIS</span><span data-f="revhash">REV 0000</span><span>EVIL IRIS INC.</span></div>
+              </footer>
+
+              <div class="c-lines"></div><div class="c-grain"></div><div class="c-edge"></div>
+            </div></div>
+          </div></div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <button class="btn pri" id="btnGen">GENERATE CARD</button>
+        <button class="btn cy" id="btnPrint">PRINT CARD</button>
+        <button class="btn" id="btnPng">DOWNLOAD PNG</button>
+        <button class="btn" id="btnSvg">DOWNLOAD SVG</button>
+        <button class="btn mg" id="btnReset">RESET</button>
+      </div>
+    </section>
+  </div>
+
+  <footer class="foot">
+    <div class="foot-1">EVIL IRIS INC. <em>//</em> ADVANCING TECHNOLOGY BEYOND CURRENT UNDERSTANDING</div>
+    <div class="foot-2" id="footId">PERSONNEL SYSTEM // EI-0001</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="printStage"></div>
+
+<script>
+/* ============================================================================
+   EVIL IRIS // PERSONNEL IDENTIFICATION SYSTEM
+   Single file. No build step, no framework, no backend.
+
+   Module map
+     1. QR       — real QR encoder (byte mode, ECC L, versions 1-10)
+     2. CODE39   — real Code 39 barcode geometry
+     3. RNG      — deterministic pseudo-random so decorative data stops
+                   flickering on every keystroke
+     4. SIGIL    — the Evil Iris aperture mark, inline SVG
+     5. DATA     — card classes, clearance ladder, defaults
+     6. STORE    — localStorage: counter, working record, roster, prefs
+     7. RENDER   — writes a record into any card element
+     8. PHOTO    — upload, zoom, pan
+     9. EXPORT   — SVG / PNG via foreignObject, print sheets
+    10. APP      — wiring, ambient effects
+   ========================================================================== */
+
+/* ---------------------------------------------------------------- 1. QR --
+   Byte mode, error correction level L, versions 1 through 10.
+   Output is verified byte-for-byte against a reference encoder.       */
+const QR = (function () {
+  // [ecCodewordsPerBlock, group1Blocks, group1Data, group2Blocks, group2Data]
+  const ECL = [
+    [7,1,19,0,0],[10,1,34,0,0],[15,1,55,0,0],[20,1,80,0,0],[26,1,108,0,0],
+    [18,2,68,0,0],[20,2,78,0,0],[24,2,97,0,0],[30,2,116,0,0],[18,2,68,2,69]
+  ];
+  const ALIGN = [[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50]];
+
+  // GF(256) log/antilog tables for Reed-Solomon
+  const EXP = new Array(512), LOG = new Array(256);
+  (function(){ let x=1; for(let i=0;i<255;i++){EXP[i]=x; LOG[x]=i; x<<=1; if(x&0x100)x^=0x11d;} for(let i=255;i<512;i++)EXP[i]=EXP[i-255]; })();
+  const gmul=(a,b)=>(a===0||b===0)?0:EXP[LOG[a]+LOG[b]];
+
+  function rsPoly(n){ let p=[1]; for(let i=0;i<n;i++){ const q=new Array(p.length+1).fill(0);
+    for(let j=0;j<p.length;j++){ q[j]^=gmul(p[j],1); q[j+1]^=gmul(p[j],EXP[i]); } p=q; } return p; }
+
+  function rsEncode(data,ecLen){ const gen=rsPoly(ecLen), res=new Array(ecLen).fill(0);
+    for(let i=0;i<data.length;i++){ const f=data[i]^res[0]; res.shift(); res.push(0);
+      for(let j=0;j<ecLen;j++) res[j]^=gmul(gen[j+1],f); } return res; }
+
+  function utf8(str){
+    if (typeof TextEncoder!=='undefined') return Array.from(new TextEncoder().encode(str));
+    const out=[]; for(const ch of unescape(encodeURIComponent(str))) out.push(ch.charCodeAt(0)&255); return out;
+  }
+
+  function encode(text){
+    const bytes=utf8(text);
+    let version=-1;
+    for(let v=1;v<=10;v++){ const [ ,b1,d1,b2,d2]=ECL[v-1]; const dataCw=b1*d1+b2*d2;
+      const cc=v<10?8:16; if(bytes.length*8+4+cc<=dataCw*8){version=v;break;} }
+    if(version<0) throw new Error('QR payload too long');
+
+    const [ecLen,b1,d1,b2,d2]=ECL[version-1];
+    const dataCw=b1*d1+b2*d2, ccBits=version<10?8:16;
+
+    // bit stream: mode + length + payload + terminator + pad
+    const bits=[]; const push=(v,n)=>{for(let i=n-1;i>=0;i--)bits.push((v>>i)&1);};
+    push(4,4); push(bytes.length,ccBits); bytes.forEach(b=>push(b,8));
+    const cap=dataCw*8;
+    for(let i=0;i<4&&bits.length<cap;i++) bits.push(0);
+    while(bits.length%8) bits.push(0);
+    const pads=[0xec,0x11]; let p=0; while(bits.length<cap) push(pads[p++%2],8);
+    const cws=[]; for(let i=0;i<bits.length;i+=8){ let v=0; for(let j=0;j<8;j++) v=(v<<1)|bits[i+j]; cws.push(v); }
+
+    // split into blocks, add ECC, interleave
+    const blocks=[],ecBlocks=[]; let off=0;
+    for(let i=0;i<b1;i++){const b=cws.slice(off,off+d1); off+=d1; blocks.push(b); ecBlocks.push(rsEncode(b,ecLen));}
+    for(let i=0;i<b2;i++){const b=cws.slice(off,off+d2); off+=d2; blocks.push(b); ecBlocks.push(rsEncode(b,ecLen));}
+    const final=[]; const maxD=Math.max(d1,d2);
+    for(let i=0;i<maxD;i++) for(const b of blocks) if(i<b.length) final.push(b[i]);
+    for(let i=0;i<ecLen;i++) for(const b of ecBlocks) final.push(b[i]);
+
+    // function patterns
+    const size=version*4+17;
+    const m=Array.from({length:size},()=>new Array(size).fill(0));
+    const res=Array.from({length:size},()=>new Array(size).fill(false));
+    const set=(r,c,v)=>{ if(r>=0&&r<size&&c>=0&&c<size){ m[r][c]=v; res[r][c]=true; } };
+
+    function finder(r,c){ for(let dr=-1;dr<=7;dr++) for(let dc=-1;dc<=7;dc++){
+      const on=(dr>=0&&dr<=6&&dc>=0&&dc<=6)&&(dr===0||dr===6||dc===0||dc===6||(dr>=2&&dr<=4&&dc>=2&&dc<=4));
+      set(r+dr,c+dc,on?1:0); } }
+    finder(0,0); finder(0,size-7); finder(size-7,0);
+    for(let i=8;i<size-8;i++){ set(6,i,i%2===0?1:0); set(i,6,i%2===0?1:0); }
+    const centers=ALIGN[version-1];
+    for(const r of centers) for(const c of centers){
+      if((r===6&&c===6)||(r===6&&c===size-7)||(r===size-7&&c===6)) continue;
+      for(let dr=-2;dr<=2;dr++) for(let dc=-2;dc<=2;dc++)
+        set(r+dr,c+dc, Math.max(Math.abs(dr),Math.abs(dc))!==1 ?1:0);
+    }
+    set(size-8,8,1);
+    for(let i=0;i<=8;i++){ if(i!==6){ set(8,i,0); set(i,8,0); } }
+    for(let i=0;i<8;i++){ set(8,size-1-i,0); set(size-1-i,8,0); }
+    if(version>=7){ let d=version; for(let i=0;i<12;i++) d=(d<<1)^((d>>>11)*0x1f25);
+      const vi=(version<<12)|d;
+      for(let i=0;i<18;i++){ const bit=(vi>>i)&1; set(Math.floor(i/3),size-11+(i%3),bit); set(size-11+(i%3),Math.floor(i/3),bit); } }
+
+    // zigzag data placement
+    const dataBits=[]; for(const cw of final) for(let i=7;i>=0;i--) dataBits.push((cw>>i)&1);
+    let bi=0, up=true;
+    for(let col=size-1;col>0;col-=2){
+      if(col===6) col--;
+      for(let i=0;i<size;i++){ const row=up?size-1-i:i;
+        for(let k=0;k<2;k++){ const c=col-k; if(res[row][c]) continue;
+          m[row][c]= bi<dataBits.length ? dataBits[bi] : 0; bi++; } }
+      up=!up;
+    }
+
+    const MASKS=[
+      (r,c)=>(r+c)%2===0,(r,c)=>r%2===0,(r,c)=>c%3===0,(r,c)=>(r+c)%3===0,
+      (r,c)=>(Math.floor(r/2)+Math.floor(c/3))%2===0,
+      (r,c)=>((r*c)%2)+((r*c)%3)===0,
+      (r,c)=>(((r*c)%2)+((r*c)%3))%2===0,
+      (r,c)=>(((r+c)%2)+((r*c)%3))%2===0
+    ];
+    function fmtBits(mask){ const d=(1<<3)|mask; let rem=d;
+      for(let i=0;i<10;i++) rem=(rem<<1)^((rem>>>9)*0x537);
+      return ((d<<10|rem)^0x5412); }
+    function applyFormat(g,mask){ const f=fmtBits(mask), bit=i=>(f>>i)&1;
+      for(let i=0;i<=5;i++) g[i][8]=bit(i);
+      g[7][8]=bit(6); g[8][8]=bit(7); g[8][7]=bit(8);
+      for(let i=9;i<=14;i++) g[8][14-i]=bit(i);
+      for(let i=0;i<=7;i++) g[8][size-1-i]=bit(i);
+      for(let i=8;i<=14;i++) g[size-15+i][8]=bit(i);
+      g[size-8][8]=1; }
+    function penalty(g){
+      let s=0;
+      for(let pass=0;pass<2;pass++) for(let a=0;a<size;a++){ let run=1;
+        for(let b=1;b<size;b++){ const cur=pass?g[b][a]:g[a][b], prev=pass?g[b-1][a]:g[a][b-1];
+          if(cur===prev) run++; else { if(run>=5) s+=run-2; run=1; } }
+        if(run>=5) s+=run-2; }
+      for(let r=0;r<size-1;r++) for(let c=0;c<size-1;c++){ const v=g[r][c];
+        if(v===g[r][c+1]&&v===g[r+1][c]&&v===g[r+1][c+1]) s+=3; }
+      const p1=[1,0,1,1,1,0,1,0,0,0,0], p2=[0,0,0,0,1,0,1,1,1,0,1];
+      for(let r=0;r<size;r++) for(let c=0;c<=size-11;c++){ let a=true,b=true;
+        for(let i=0;i<11;i++){ if(g[r][c+i]!==p1[i])a=false; if(g[r][c+i]!==p2[i])b=false; }
+        if(a)s+=40; if(b)s+=40; }
+      for(let c=0;c<size;c++) for(let r=0;r<=size-11;r++){ let a=true,b=true;
+        for(let i=0;i<11;i++){ if(g[r+i][c]!==p1[i])a=false; if(g[r+i][c]!==p2[i])b=false; }
+        if(a)s+=40; if(b)s+=40; }
+      let dark=0; for(let r=0;r<size;r++) for(let c=0;c<size;c++) dark+=g[r][c];
+      s+=Math.floor(Math.abs((dark*100)/(size*size)-50)/5)*10;
+      return s;
+    }
+    let best=null,bs=Infinity;
+    for(let mask=0;mask<8;mask++){
+      const g=m.map(r=>r.slice());
+      for(let r=0;r<size;r++) for(let c=0;c<size;c++) if(!res[r][c]&&MASKS[mask](r,c)) g[r][c]^=1;
+      applyFormat(g,mask);
+      const sc=penalty(g); if(sc<bs){bs=sc; best=g;}
+    }
+    return best;
+  }
+
+  /* Renders as inline SVG (not canvas) so it survives cloning and export. */
+  function svg(text, quiet){
+    let m; try{ m=encode(text); }catch(e){ m=encode('EVIL IRIS PERSONNEL'); }
+    const n=m.length, q=(quiet===undefined?2:quiet), dim=n+q*2;
+    let d='';
+    for(let r=0;r<n;r++) for(let c=0;c<n;c++) if(m[r][c]) d+='M'+(c+q)+' '+(r+q)+'h1v1h-1z';
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+dim+' '+dim+'" shape-rendering="crispEdges">'+
+           '<rect width="'+dim+'" height="'+dim+'" fill="#e8ecf4"/>'+
+           '<path d="'+d+'" fill="#08090d"/></svg>';
+  }
+  return { encode, svg };
+})();
+
+/* ------------------------------------------------------------ 2. CODE39 --
+   Genuine Code 39 element widths, drawn as flex children.            */
+const CODE39 = (function(){
+  const T={'0':'nnnwwnwnn','1':'wnnwnnnnw','2':'nnwwnnnnw','3':'wnwwnnnnn','4':'nnnwwnnnw',
+  '5':'wnnwwnnnn','6':'nnwwwnnnn','7':'nnnwnnwnw','8':'wnnwnnwnn','9':'nnwwnnwnn',
+  'A':'wnnnnwnnw','B':'nnwnnwnnw','C':'wnwnnwnnn','D':'nnnnwwnnw','E':'wnnnwwnnn',
+  'F':'nnwnwwnnn','G':'nnnnnwwnw','H':'wnnnnwwnn','I':'nnwnnwwnn','J':'nnnnwwwnn',
+  'K':'wnnnnnnww','L':'nnwnnnnww','M':'wnwnnnnwn','N':'nnnnwnnww','O':'wnnnwnnwn',
+  'P':'nnwnwnnwn','Q':'nnnnnnwww','R':'wnnnnnwwn','S':'nnwnnnwwn','T':'nnnnwnwwn',
+  'U':'wwnnnnnnw','V':'nwwnnnnnw','W':'wwwnnnnnn','X':'nwnnwnnnw','Y':'wwnnwnnnn',
+  'Z':'nwwnwnnnn','-':'nwnnnnwnw','.':'wwnnnnwnn',' ':'nwwnnnwnn','$':'nwnwnwnnn',
+  '/':'nwnwnnnwn','+':'nwnnnwnwn','%':'nnnwnwnwn','*':'nwnnwnwnn'};
+  /* Returns {units:[{w,bar}], total} — the caller turns this into DOM. */
+  function bars(text){
+    const s='*'+String(text).toUpperCase().replace(/[^0-9A-Z\-\. \$\/\+%]/g,'-')+'*';
+    const out=[]; let total=0;
+    for(let i=0;i<s.length;i++){
+      const pat=T[s[i]]||T['-'];
+      for(let j=0;j<9;j++){ const w=pat[j]==='w'?3:1; out.push({w,bar:j%2===0}); total+=w; }
+      if(i<s.length-1){ out.push({w:1,bar:false}); total+=1; }
+    }
+    return {units:out,total};
+  }
+  return { bars };
+})();
+
+/* --------------------------------------------------------------- 3. RNG --
+   Deterministic per personnel number: the "telemetry" on a given card is
+   always identical, so it reads as data rather than noise.            */
+function hash32(str){ let h=2166136261>>>0; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } return h>>>0; }
+function mulberry(seed){ return function(){ seed|=0; seed=seed+0x6D2B79F5|0;
+  let t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t;
+  return ((t^t>>>14)>>>0)/4294967296; }; }
+function hexStr(rnd,len){ const H='0123456789ABCDEF'; let s=''; for(let i=0;i<len;i++) s+=H[(rnd()*16)|0]; return s; }
+
+/* ------------------------------------------------------------- 4. SIGIL --
+   The Evil Iris aperture mark: six blades, a ticked ring, a pulsing pupil.
+   Colours come from CSS custom properties so every class re-tints it.  */
+function sigilSVG(){
+  let blades='';
+  for(let i=0;i<6;i++){
+    blades+='<path d="M0 -30 L17 -13 L7 6 L-7 6 L-17 -13 Z" transform="rotate('+(i*60)+')" fill="none" stroke="var(--accent)" stroke-width="1.6" opacity="'+(0.30+i*0.06).toFixed(2)+'"/>';
+  }
+  let ticks='';
+  for(let i=0;i<36;i++){ const len=(i%9===0)?6:3;
+    ticks+='<path d="M0 -44 v'+len+'" transform="rotate('+(i*10)+')" stroke="var(--accent2)" stroke-width="1.2" opacity="'+((i%9===0)?0.9:0.4)+'"/>'; }
+  return '<svg viewBox="-50 -50 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:100%;height:100%;display:block">'+
+    '<g fill="none">'+
+      '<circle r="46" stroke="var(--accent)" stroke-width="1.4" opacity=".55"/>'+
+      '<g>'+ticks+'</g>'+
+      '<g style="transform-origin:0 0"><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="26s" repeatCount="indefinite"/>'+blades+'</g>'+
+      '<circle r="34" stroke="var(--accent2)" stroke-width="1" opacity=".5" stroke-dasharray="6 4"/>'+
+    '</g>'+
+    '<ellipse rx="30" ry="18" fill="none" stroke="var(--accent2)" stroke-width="2" opacity=".85"/>'+
+    '<circle r="13" fill="var(--accent)" opacity=".28"/>'+
+    '<circle r="9" fill="none" stroke="var(--bone)" stroke-width="2"/>'+
+    '<circle r="4.5" fill="var(--bone)"><animate attributeName="r" values="4.5;3;4.5" dur="4s" repeatCount="indefinite"/></circle>'+
+    '<circle r="9" fill="none" stroke="var(--magenta)" stroke-width="1" opacity=".8"><animate attributeName="r" values="9;22;9" dur="4s" repeatCount="indefinite"/><animate attributeName="opacity" values=".8;0;.8" dur="4s" repeatCount="indefinite"/></circle>'+
+  '</svg>';
+}
+
+/* --------------------------------------------------------------- 5. DATA -- */
+const CLASSES={
+  standard:{label:'STANDARD PERSONNEL',code:'STD',accent:'#a855f7',accent2:'#22d3ee',role:'ROLE',unit:'DIVISION',cred:'PERSONNEL CREDENTIAL'},
+  executive:{label:'EXECUTIVE',code:'EXC',accent:'#ff2d8f',accent2:'#a855f7',role:'OFFICE',unit:'DIVISION',cred:'EXECUTIVE CREDENTIAL'},
+  engineer:{label:'ENGINEER',code:'ENG',accent:'#22d3ee',accent2:'#a855f7',role:'FUNCTION',unit:'DIVISION',cred:'ENGINEERING CREDENTIAL'},
+  researcher:{label:'RESEARCHER',code:'RSR',accent:'#7c5cff',accent2:'#22d3ee',role:'DISCIPLINE',unit:'LABORATORY',cred:'RESEARCH CREDENTIAL'},
+  field:{label:'FIELD OPERATIVE',code:'FLD',accent:'#ff2d55',accent2:'#22d3ee',role:'BILLET',unit:'CELL',cred:'FIELD OPERATIONS CREDENTIAL'},
+  recruit:{label:'RECRUIT',code:'RCT',accent:'#8b93a7',accent2:'#22d3ee',role:'TRACK',unit:'COHORT',cred:'PROVISIONAL CREDENTIAL'},
+  developer:{label:'DEVELOPER',code:'DEV',accent:'#22d3ee',accent2:'#ff2d8f',role:'STACK',unit:'SQUAD',cred:'DEVELOPMENT CREDENTIAL'},
+  security:{label:'SECURITY',code:'SEC',accent:'#ff2d8f',accent2:'#ff2d55',role:'POST',unit:'WATCH',cred:'SECURITY CREDENTIAL'},
+  rnd:{label:'R&D',code:'RND',accent:'#a855f7',accent2:'#7cffb2',role:'PROGRAM',unit:'LABORATORY',cred:'R&D CREDENTIAL'},
+  architect:{label:'ARCHITECT',code:'ARC',accent:'#c4b5fd',accent2:'#22d3ee',role:'MANDATE',unit:'DOMAIN',cred:'ARCHITECT CREDENTIAL'}
+};
+const CLEARANCE=[null,
+  {n:'01',t:'RECRUIT',auth:22},{n:'02',t:'OPERATIVE',auth:34},{n:'03',t:'TECHNICIAN',auth:46},
+  {n:'04',t:'SPECIALIST',auth:58},{n:'05',t:'COMMAND',auth:70},{n:'06',t:'EXECUTIVE',auth:82},
+  {n:'07',t:'BLACK',auth:93},{n:'08',t:'IRIS',auth:100}];
+
+const DEFAULTS={
+  name:'MARVELLE RICHARDSON', call:'THE ARCHITECT', pid:'', cls:'architect',
+  role:'SYSTEM ARCHITECT', div:'R&D', dept:'ADVANCED SYSTEMS', spec:'ADVANCED TECHNOLOGY',
+  clr:7, stat:'ACTIVE', join:'2019-04-07', base:'LOS ANGELES // NODE-01',
+  mail:'architect@eternalcyberpunk.com',
+  bio:'Founding systems architect. Designs the substrate the rest of the company stands on — rendering pipelines, distributed agents, hardware that has no business existing yet.',
+  skills:'C++, METAL, SDF SCULPTING, DISTRIBUTED SYSTEMS, HARDWARE',
+  quote:'The eye does not blink.',
+  sec:'EMERGENCY CONTACT // NODE-01 OPERATIONS DESK',
+  custom:'ISSUED UNDER DIRECTIVE 7-A',
+  photo:'', zoom:100, px:50, py:50
+};
+
+/* -------------------------------------------------------------- 6. STORE -- */
+const STORE={
+  K:{counter:'ei.counter', rec:'ei.record', roster:'ei.roster', prefs:'ei.prefs'},
+  get(k,f){ try{ const v=localStorage.getItem(k); return v===null?f:JSON.parse(v); }catch(e){ return f; } },
+  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} },
+  nextNumber(){ const n=(this.get(this.K.counter,0)|0)+1; this.set(this.K.counter,n); return n; },
+  peek(){ return this.get(this.K.counter,0)|0; }
+};
+const padId=n=>'EI-'+String(n).padStart(4,'0');
+
+/* ------------------------------------------------------------- 7. RENDER --
+   renderCard(el, data) writes a record into ANY card element, which is what
+   makes multi-card print sheets and off-screen export clones possible.  */
+function digits(pid){ const m=String(pid).match(/(\d+)\s*$/); return m?m[1]:'0000'; }
+
+function qrPayload(d,withContact){
+  const L=['EVIL IRIS PERSONNEL','ID: '+d.pid,'NAME: '+d.name,'ROLE: '+d.role,
+           'CLEARANCE: LEVEL '+CLEARANCE[d.clr].n,'CLASS: '+CLASSES[d.cls].label];
+  if(withContact){ if(d.mail) L.push('NET: '+d.mail); if(d.base) L.push('BASE: '+d.base); }
+  return L.join('\n');
+}
+
+function renderCard(root,d,opts){
+  opts=opts||{};
+  const cls=CLASSES[d.cls]||CLASSES.standard;
+  const clr=CLEARANCE[d.clr]||CLEARANCE[7];
+  const dg=digits(d.pid);
+  const rnd=mulberry(hash32(d.pid+'|'+d.name+'|'+d.cls));
+
+  root.dataset.cls=d.cls;
+  root.style.setProperty('--accent',cls.accent);
+  root.style.setProperty('--accent2',cls.accent2);
+
+  const put=(k,v)=>{ root.querySelectorAll('[data-f="'+k+'"]').forEach(n=>{ n.textContent=v; }); };
+  const html=(k,v)=>{ root.querySelectorAll('[data-f="'+k+'"]').forEach(n=>{ n.innerHTML=v; }); };
+
+  // identity
+  const nm=(d.name||'UNNAMED SUBJECT').toUpperCase();
+  put('name',nm);
+  root.querySelectorAll('[data-f="name"]').forEach(n=>{
+    n.classList.toggle('long',nm.length>18); n.classList.toggle('xlong',nm.length>24);
+  });
+  put('call',(d.call||'NO CALLSIGN').toUpperCase());
+  put('pid',d.pid); put('pidm','EI//'+dg+'//IRIS');
+
+  // assignment
+  put('lRole',cls.role); put('lUnit',cls.unit);
+  put('role',(d.role||'—').toUpperCase());
+  put('div',(d.div||'—').toUpperCase());
+  put('dept',(d.dept||'—').toUpperCase());
+  put('spec',(d.spec||'—').toUpperCase());
+  put('stat',(d.stat||'ACTIVE').toUpperCase());
+  put('clr2','LEVEL '+clr.n+' // '+clr.t);
+  html('clr','LEVEL '+clr.n+' <b data-f="clrName">'+clr.t+'</b>');
+  put('credLabel',cls.cred+' // '+cls.code);
+
+  // portrait
+  const img=root.querySelector('[data-f="photo"]');
+  const empty=root.querySelector('[data-f="photoEmpty"]');
+  if(img){
+    if(d.photo){ img.src=d.photo; img.hidden=false; if(empty) empty.style.display='none';
+      img.style.objectPosition=d.px+'% '+d.py+'%';
+      img.style.transform='scale('+(d.zoom/100)+')';
+    } else { img.removeAttribute('src'); img.hidden=true; if(empty) empty.style.display=''; }
+  }
+
+  // deterministic telemetry
+  const subj=hexStr(rnd,8);
+  put('subj','SUBJ 0x'+subj);
+  const m1=88+Math.floor(rnd()*11), m2=84+Math.floor(rnd()*14), m3=Math.max(40,clr.auth-6+Math.floor(rnd()*8));
+  [['m1',m1],['m2',m2],['m3',m3]].forEach(([k,v])=>{
+    const b=root.querySelector('[data-f="'+k+'"]'); if(b) b.style.width=v+'%';
+    put(k+'v',v);
+  });
+  const lat=(rnd()*8+30).toFixed(4), lon=(rnd()*30+95).toFixed(4);
+  put('coords',lat+'N '+lon+'W // GRID '+hexStr(rnd,4));
+  put('issue','ISSUED '+(d.join||'').replace(/-/g,'.'));
+  put('hash','SHA '+hexStr(rnd,4)+'-'+hexStr(rnd,4));
+  put('revhash','REV '+hexStr(rnd,6));
+  let col=''; for(let i=0;i<6;i++) col+=hexStr(rnd,6)+'<br>';
+  html('hexcol',col);
+  let stripe=''; for(let i=0;i<14;i++) stripe+=hexStr(rnd,8)+' ';
+  put('stripe',stripe.trim());
+
+  // radar tick marks
+  const ticks=root.querySelector('[data-f="ticks"]');
+  if(ticks){ let t='';
+    for(let i=0;i<24;i++){ const a=i*15*Math.PI/180, r1=19, r2=i%6===0?15:17.5;
+      t+='<path d="M'+(21+Math.cos(a)*r1).toFixed(1)+' '+(21+Math.sin(a)*r1).toFixed(1)+
+         'L'+(21+Math.cos(a)*r2).toFixed(1)+' '+(21+Math.sin(a)*r2).toFixed(1)+'"/>'; }
+    ticks.innerHTML=t; }
+
+  // barcode (Code 39 of the personnel number)
+  const bc=root.querySelector('[data-f="barcode"]');
+  if(bc){ const {units,total}=CODE39.bars(d.pid||'EI-0000');
+    let h='';
+    units.forEach(u=>{ h+='<i class="'+(u.bar?'':'sp')+'" style="width:'+(u.w/total*100).toFixed(4)+'%"></i>'; });
+    bc.innerHTML=h; }
+
+  // QR codes
+  const payload=qrPayload(d,!!opts.qrContact);
+  const qf=root.querySelector('[data-f="qrFront"]'); if(qf) qf.innerHTML=QR.svg(payload,2);
+  const qb=root.querySelector('[data-f="qrBack"]');  if(qb) qb.innerHTML=QR.svg(payload,2);
+
+  // reverse-face dossier
+  put('bio',d.bio||'No biographical record on file.');
+  const chips=root.querySelector('[data-f="skills"]');
+  if(chips){ const list=(d.skills||'').split(',').map(s=>s.trim()).filter(Boolean);
+    chips.innerHTML=list.length?list.map(s=>'<span class="b-chip">'+escapeHTML(s.toUpperCase())+'</span>').join('')
+                              :'<span class="b-chip">UNCLASSIFIED</span>'; }
+  const qw=root.querySelector('[data-f="quoteWrap"]');
+  if(qw) qw.style.display=d.quote?'':'none';
+  put('quote',d.quote?'“'+d.quote+'”':'');
+  put('mail',d.mail||'—'); put('base',(d.base||'—').toUpperCase());
+  put('join',(d.join||'—').replace(/-/g,'.'));
+  const sw=root.querySelector('[data-f="secWrap"]');
+  if(sw) sw.style.display=d.sec?'':'none';
+  put('sec',d.sec||'');
+  put('custom',d.custom||'');
+
+  // sigils
+  root.querySelectorAll('[data-sigil]').forEach(n=>{ if(!n.firstChild) n.innerHTML=sigilSVG(); });
+
+  root.classList.toggle('print-safe',!!opts.printSafe);
+}
+function escapeHTML(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* --------------------------------------------------------------- 8. APP -- */
+const $=id=>document.getElementById(id);
+const FRONT=$('cardFront'), BACK=$('cardBack');
+let state=Object.assign({},DEFAULTS);
+let prefs=STORE.get(STORE.K.prefs,{safe:false,qrContact:false,backs:true,cut:true,sheet:'2',scale:'4',roster:false});
+
+const FIELD_MAP=[
+  ['fName','name'],['fCall','call'],['fPid','pid'],['fCls','cls'],['fRole','role'],
+  ['fDiv','div'],['fDept','dept'],['fSpec','spec'],['fClr','clr'],['fStat','stat'],
+  ['fJoin','join'],['fBase','base'],['fMail','mail'],['fBio','bio'],['fSkills','skills'],
+  ['fQuote','quote'],['fSec','sec'],['fCustom','custom'],
+  ['fZoom','zoom'],['fPx','px'],['fPy','py']
+];
+
+function formToState(){
+  FIELD_MAP.forEach(([id,key])=>{ const el=$(id); if(!el) return;
+    let v=el.value;
+    if(key==='clr'||key==='zoom'||key==='px'||key==='py') v=parseInt(v,10)||0;
+    state[key]=v; });
+}
+function stateToForm(){
+  FIELD_MAP.forEach(([id,key])=>{ const el=$(id); if(el) el.value=state[key]; });
+  $('vZoom').textContent=state.zoom+'%'; $('vPx').textContent=state.px+'%'; $('vPy').textContent=state.py+'%';
+}
+function opts(){ return {printSafe:$('oSafe').checked, qrContact:$('oQrContact').checked}; }
+
+function paint(){
+  renderCard(FRONT,state,opts());
+  renderCard(BACK,state,opts());
+  $('footId').textContent='PERSONNEL SYSTEM // '+state.pid;
+  $('recTag').textContent='RECORD // '+state.pid;
+  STORE.set(STORE.K.rec,state);
+}
+function commit(){ formToState(); paint(); }
+
+/* --- personnel numbering ------------------------------------------------ */
+function generateNumber(){
+  const n=STORE.nextNumber();
+  state.pid=padId(n);
+  $('fPid').value=state.pid;
+  paint();
+  toast('PERSONNEL NUMBER ISSUED // '+state.pid);
+}
+
+/* --- toast -------------------------------------------------------------- */
+let toastT;
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('on');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),2200); }
+
+/* --- 8b. PHOTO ---------------------------------------------------------- */
+$('fPhoto').addEventListener('change',e=>{
+  const f=e.target.files&&e.target.files[0]; if(!f) return;
+  if(!/^image\/(jpeg|png|webp)$/.test(f.type)){ toast('UNSUPPORTED FORMAT — USE JPG, PNG OR WEBP'); return; }
+  const r=new FileReader();
+  r.onload=()=>{
+    // Downscale to a sane long edge so localStorage and exports stay small.
+    const img=new Image();
+    img.onload=()=>{
+      const max=900, sc=Math.min(1,max/Math.max(img.width,img.height));
+      const cv=document.createElement('canvas');
+      cv.width=Math.round(img.width*sc); cv.height=Math.round(img.height*sc);
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      state.photo=cv.toDataURL('image/jpeg',0.88);
+      paint(); toast('SUBJECT PHOTOGRAPH ACQUIRED');
+    };
+    img.onerror=()=>{ state.photo=r.result; paint(); };
+    img.src=r.result;
+  };
+  r.readAsDataURL(f);
+});
+$('btnCrop').addEventListener('click',()=>{
+  state.zoom=100; state.px=50; state.py=50; stateToForm(); paint(); toast('CROP RESET');
+});
+
+/* --- 9. EXPORT ----------------------------------------------------------
+   The card is HTML, so it is exported by wrapping a serialised clone in an
+   SVG <foreignObject> together with the card stylesheet. That single SVG is
+   the .svg download, and rasterising it through an <img> gives the .png.  */
+let FONT_CSS=null;
+async function embeddedFontCSS(){
+  if(FONT_CSS!==null) return FONT_CSS;
+  FONT_CSS='';
+  try{
+    const ctrl=new AbortController(); const kill=setTimeout(()=>ctrl.abort(),4000);
+    const cssUrl='https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap';
+    const css=await (await fetch(cssUrl,{signal:ctrl.signal})).text();
+    const urls=[...css.matchAll(/url\((https:\/\/fonts\.gstatic\.com[^)]+)\)/g)].map(m=>m[1]).slice(0,8);
+    const parts=await Promise.all(urls.map(async u=>{
+      const buf=await (await fetch(u,{signal:ctrl.signal})).arrayBuffer();
+      let bin=''; const b=new Uint8Array(buf);
+      for(let i=0;i<b.length;i++) bin+=String.fromCharCode(b[i]);
+      return [u,'data:font/woff2;base64,'+btoa(bin)];
+    }));
+    let out=css; parts.forEach(([u,dataUrl])=>{ out=out.split(u).join(dataUrl); });
+    clearTimeout(kill);
+    FONT_CSS=out;
+  }catch(e){ FONT_CSS=''; }   // offline: exports fall back to system faces
+  return FONT_CSS;
+}
+
+async function cardSVG(cardEl,scale){
+  const clone=cardEl.cloneNode(true);
+  clone.classList.add('print-safe');
+  clone.style.margin='0';
+  const body=new XMLSerializer().serializeToString(clone);
+  const css=document.getElementById('cardCss').textContent
+              .replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const fonts=(await embeddedFontCSS()).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const W=384,H=240;
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="'+(W*scale)+'" height="'+(H*scale)+'" viewBox="0 0 '+W+' '+H+'">'+
+    '<foreignObject x="0" y="0" width="'+W+'" height="'+H+'">'+
+      '<div xmlns="http://www.w3.org/1999/xhtml"><style>'+fonts+'\n'+css+'</style>'+body+'</div>'+
+    '</foreignObject></svg>';
+}
+function download(blob,filename){
+  const url=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=url; a.download=filename; document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); },600);
+}
+function fileStem(face){
+  return 'EVIL-IRIS-'+String(state.pid||'EI-0000').replace(/[^A-Za-z0-9-]/g,'')+'-'+
+         String(state.name||'SUBJECT').toUpperCase().replace(/[^A-Z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+face;
+}
+async function exportSVG(){
+  toast('RENDERING VECTOR…');
+  for(const [el,face] of [[FRONT,'FRONT'],[BACK,'BACK']]){
+    const svg=await cardSVG(el,1);
+    download(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}),fileStem(face)+'.svg');
+  }
+  toast('SVG WRITTEN // FRONT + BACK');
+}
+async function exportPNG(){
+  const scale=parseInt($('fScale').value,10)||4;
+  toast('RASTERISING '+ (384*scale) +' × ' + (240*scale) +'…');
+  for(const [el,face] of [[FRONT,'FRONT'],[BACK,'BACK']]){
+    const svg=await cardSVG(el,scale);
+    const url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+    await new Promise((resolve)=>{
+      const img=new Image();
+      img.onload=()=>{
+        const cv=document.createElement('canvas');
+        cv.width=384*scale; cv.height=240*scale;
+        const ctx=cv.getContext('2d');
+        ctx.fillStyle='#05060a'; ctx.fillRect(0,0,cv.width,cv.height);
+        ctx.drawImage(img,0,0,cv.width,cv.height);
+        cv.toBlob(b=>{ if(b) download(b,fileStem(face)+'.png'); resolve(); },'image/png');
+      };
+      img.onerror=()=>{ toast('RASTER FAILED — USE PRINT ▸ SAVE AS PDF'); resolve(); };
+      img.src=url;
+    });
+  }
+}
+
+/* --- print sheets ------------------------------------------------------- */
+function buildPrintStage(){
+  const stage=$('printStage'); stage.innerHTML='';
+  const per=parseInt($('fSheet').value,10)||1;
+  const cut=$('oCut').checked;
+  const withBacks=$('oBacks').checked;
+
+  // Which records fill the sheet: the working record, or the saved roster.
+  let records=[state];
+  if($('oRoster').checked){
+    const roster=STORE.get(STORE.K.roster,[]);
+    if(roster.length) records=roster.slice(0,per);
+  }
+  while(records.length<per) records.push(records[records.length-1]);
+
+  const o={printSafe:true,qrContact:$('oQrContact').checked};
+
+  const makeSheet=(templateEl)=>{
+    const sheet=document.createElement('div'); sheet.className='sheet';
+    for(let i=0;i<per;i++){
+      const slot=document.createElement('div');
+      slot.className='slot'+(cut?' cut':'');
+      if(cut) slot.innerHTML='<i class="crop tl"></i><i class="crop tr"></i><i class="crop bl"></i><i class="crop br"></i>';
+      const card=templateEl.cloneNode(true);
+      card.removeAttribute('id');
+      renderCard(card,records[i],o);
+      slot.appendChild(card);
+      sheet.appendChild(slot);
+    }
+    return sheet;
+  };
+
+  stage.appendChild(makeSheet(FRONT));
+  if(withBacks) stage.appendChild(makeSheet(BACK));
+}
+window.addEventListener('beforeprint',buildPrintStage);
+window.addEventListener('afterprint',()=>{ $('printStage').innerHTML=''; });
+
+/* --- roster ------------------------------------------------------------- */
+function refreshRoster(sel){
+  const roster=STORE.get(STORE.K.roster,[]);
+  const s=$('fRoster');
+  s.innerHTML = roster.length
+    ? roster.map((r,i)=>'<option value="'+i+'">'+escapeHTML(r.pid+' — '+r.name)+'</option>').join('')
+    : '<option value="">— ROSTER EMPTY —</option>';
+  if(sel!==undefined && roster.length) s.value=String(sel);
+}
+$('btnSave').addEventListener('click',()=>{
+  commit();
+  const roster=STORE.get(STORE.K.roster,[]);
+  const i=roster.findIndex(r=>r.pid===state.pid);
+  const rec=JSON.parse(JSON.stringify(state));
+  if(i>=0) roster[i]=rec; else roster.push(rec);
+  STORE.set(STORE.K.roster,roster);
+  refreshRoster(i>=0?i:roster.length-1);
+  toast('PERSONNEL FILED // '+state.pid);
+});
+$('btnLoad').addEventListener('click',()=>{
+  const roster=STORE.get(STORE.K.roster,[]), i=parseInt($('fRoster').value,10);
+  if(isNaN(i)||!roster[i]){ toast('NO RECORD SELECTED'); return; }
+  state=Object.assign({},DEFAULTS,roster[i]);
+  stateToForm(); paint(); toast('RECORD LOADED // '+state.pid);
+});
+$('btnDel').addEventListener('click',()=>{
+  const roster=STORE.get(STORE.K.roster,[]), i=parseInt($('fRoster').value,10);
+  if(isNaN(i)||!roster[i]){ toast('NO RECORD SELECTED'); return; }
+  const gone=roster[i].pid; roster.splice(i,1);
+  STORE.set(STORE.K.roster,roster); refreshRoster(0);
+  toast('RECORD PURGED // '+gone);
+});
+$('btnNew').addEventListener('click',()=>{
+  const keep=state.cls;
+  state=Object.assign({},DEFAULTS,{name:'',call:'',role:'',div:'',dept:'',spec:'',bio:'',skills:'',quote:'',sec:'',custom:'',photo:'',cls:keep,pid:padId(STORE.nextNumber())});
+  stateToForm(); paint(); toast('BLANK RECORD // '+state.pid);
+});
+$('btnExport').addEventListener('click',()=>{
+  const payload={system:'EVIL IRIS PERSONNEL SYSTEM',version:1,exported:new Date().toISOString(),
+    counter:STORE.peek(),roster:STORE.get(STORE.K.roster,[]),current:state};
+  download(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),'evil-iris-personnel-'+Date.now()+'.json');
+  toast('DATABASE EXPORTED');
+});
+$('btnImport').addEventListener('click',()=>$('fImport').click());
+$('fImport').addEventListener('change',e=>{
+  const f=e.target.files&&e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const p=JSON.parse(r.result);
+      if(Array.isArray(p.roster)) STORE.set(STORE.K.roster,p.roster);
+      if(typeof p.counter==='number') STORE.set(STORE.K.counter,Math.max(p.counter,STORE.peek()));
+      if(p.current){ state=Object.assign({},DEFAULTS,p.current); stateToForm(); paint(); }
+      refreshRoster(0);
+      toast('DATABASE IMPORTED // '+(p.roster?p.roster.length:0)+' RECORDS');
+    }catch(err){ toast('IMPORT FAILED — FILE IS NOT VALID JSON'); }
+  };
+  r.readAsText(f); e.target.value='';
+});
+
+/* --- toolbar ------------------------------------------------------------ */
+$('btnGen').addEventListener('click',()=>{
+  commit();
+  [FRONT,BACK].forEach(c=>{ c.classList.remove('gen'); void c.offsetWidth; c.classList.add('gen'); });
+  toast('CREDENTIAL GENERATED // '+state.pid);
+});
+$('btnPrint').addEventListener('click',()=>{ commit(); buildPrintStage(); window.print(); });
+$('btnPng').addEventListener('click',()=>{ commit(); exportPNG(); });
+$('btnSvg').addEventListener('click',()=>{ commit(); exportSVG(); });
+$('btnGenNum').addEventListener('click',generateNumber);
+$('btnReset').addEventListener('click',()=>{
+  if(!confirm('Reset the form to the default record? Saved roster and the number sequence are kept.')) return;
+  state=Object.assign({},DEFAULTS,{pid:state.pid});
+  stateToForm(); paint(); toast('FORM RESET');
+});
+
+/* --- live binding ------------------------------------------------------- */
+FIELD_MAP.forEach(([id])=>{
+  const el=$(id); if(!el) return;
+  el.addEventListener('input',()=>{
+    commit();
+    if(id==='fZoom') $('vZoom').textContent=state.zoom+'%';
+    if(id==='fPx') $('vPx').textContent=state.px+'%';
+    if(id==='fPy') $('vPy').textContent=state.py+'%';
+  });
+  el.addEventListener('change',commit);
+});
+['oSafe','oQrContact'].forEach(id=>$(id).addEventListener('change',()=>{
+  document.body.classList.toggle('print-safe',$('oSafe').checked);
+  paint(); savePrefs();
+}));
+['oBacks','oCut','oRoster','fSheet','fScale'].forEach(id=>$(id).addEventListener('change',savePrefs));
+function savePrefs(){
+  STORE.set(STORE.K.prefs,{safe:$('oSafe').checked,qrContact:$('oQrContact').checked,
+    backs:$('oBacks').checked,cut:$('oCut').checked,sheet:$('fSheet').value,
+    scale:$('fScale').value,roster:$('oRoster').checked});
+}
+
+/* --- preview scaling ---------------------------------------------------- */
+function fitStages(){
+  ['wrapA','wrapB'].forEach((w,i)=>{
+    const wrap=$(w), stage=$(i===0?'stageA':'stageB');
+    const avail=wrap.parentElement.clientWidth||384;
+    const zoom=Math.max(0.6,Math.min(2,(avail-4)/384));
+    stage.style.setProperty('--zoom',zoom);
+    wrap.style.width=(384*zoom)+'px';
+    wrap.style.height=(240*zoom)+'px';
+  });
+}
+window.addEventListener('resize',fitStages);
+
+/* --- ambient: hex rain + clock ------------------------------------------ */
+(function rain(){
+  const cv=$('rain'), ctx=cv.getContext('2d');
+  const H='0123456789ABCDEF';
+  let cols=[], last=0;
+  function size(){ cv.width=innerWidth; cv.height=innerHeight;
+    const n=Math.floor(cv.width/26); cols=[];
+    for(let i=0;i<n;i++) cols.push({x:i*26+8,y:Math.random()*cv.height,s:0.4+Math.random()*1.2}); }
+  size(); addEventListener('resize',size);
+  function tick(t){
+    requestAnimationFrame(tick);
+    if($('oSafe')&&$('oSafe').checked) { ctx.clearRect(0,0,cv.width,cv.height); return; }
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if(t-last<90) return; last=t;
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ctx.font='10px "Space Mono", monospace';
+    cols.forEach(c=>{
+      c.y+=c.s*10; if(c.y>cv.height+120) c.y=-40;
+      for(let k=0;k<7;k++){
+        ctx.fillStyle=k===0?'rgba(34,211,238,.55)':'rgba(168,85,247,'+(0.20-k*0.026)+')';
+        ctx.fillText(H[(Math.random()*16)|0]+H[(Math.random()*16)|0], c.x, c.y-k*14);
+      }
+    });
+  }
+  requestAnimationFrame(tick);
+})();
+setInterval(()=>{
+  const d=new Date();
+  const p=n=>String(n).padStart(2,'0');
+  $('clock').textContent=p(d.getUTCHours())+':'+p(d.getUTCMinutes())+':'+p(d.getUTCSeconds())+' UTC';
+},1000);
+
+/* --- boot --------------------------------------------------------------- */
+(function boot(){
+  $('navSigil').innerHTML=sigilSVG();
+
+  const saved=STORE.get(STORE.K.rec,null);
+  state=Object.assign({},DEFAULTS,saved||{});
+  if(!state.pid) state.pid=padId(STORE.nextNumber());
+
+  // restore preferences
+  $('oSafe').checked=!!prefs.safe; $('oQrContact').checked=!!prefs.qrContact;
+  $('oBacks').checked=prefs.backs!==false; $('oCut').checked=prefs.cut!==false;
+  $('oRoster').checked=!!prefs.roster;
+  if(prefs.sheet) $('fSheet').value=prefs.sheet;
+  if(prefs.scale) $('fScale').value=prefs.scale;
+  document.body.classList.toggle('print-safe',$('oSafe').checked);
+
+  stateToForm();
+  refreshRoster();
+  paint();
+  fitStages();
+  // Fonts land after first paint; re-fit so nothing is clipped.
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fitStages);
+  setTimeout(fitStages,400);
+})();
+</script>
+</body>
+</html>
